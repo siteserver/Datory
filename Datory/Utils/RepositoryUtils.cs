@@ -94,24 +94,7 @@ namespace Datory.Utils
                 namedBindings = compiled.NamedBindings;
             }
 
-            Logger(sql, namedBindings);
-
             return (sql, namedBindings);
-        }
-
-        private static void Logger(string sql, object bindings)
-        {
-#if DEBUG
-            ConvertUtils.AppendTextAsync(System.IO.Path.Combine(Environment.CurrentDirectory, $"log.{DateTime.Now.ToLongTimeString()}.sql"),
-                bindings != null
-                    ? $@"
-            sql:{sql}
-            bindings:{ConvertUtils.JsonSerialize(bindings)}
-            "
-                    : $@"
-            sql:{sql}
-            ").ConfigureAwait(false);
-#endif
         }
 
         public static void SyncAndCheckGuid(DatabaseType databaseType, string connectionString, string tableName, Entity dataInfo)
