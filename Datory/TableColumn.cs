@@ -3,7 +3,7 @@
     /// <summary>
     /// 数据库表字段信息。
     /// </summary>
-    public class DatoryColumn
+    public class TableColumn
     {
         /// <summary>
         /// 字段名称。

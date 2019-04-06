@@ -3,10 +3,13 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
-namespace Datory
+[assembly: InternalsVisibleTo("Datory.Tests")]
+
+namespace Datory.Utils
 {
-    public static class ReflectionUtils
+    internal static class ReflectionUtils
     {
         #region Caches
 
@@ -40,18 +43,18 @@ namespace Datory
             return name;
         }
 
-        private static readonly ConcurrentDictionary<RuntimeTypeHandle, IEnumerable<DatoryColumn>> DatoryColumns = new ConcurrentDictionary<RuntimeTypeHandle, IEnumerable<DatoryColumn>>();
+        private static readonly ConcurrentDictionary<RuntimeTypeHandle, IEnumerable<TableColumn>> TableColumns = new ConcurrentDictionary<RuntimeTypeHandle, IEnumerable<TableColumn>>();
 
-        public static List<DatoryColumn> GetTableColumns(Type type)
+        public static List<TableColumn> GetTableColumns(Type type)
         {
-            if (DatoryColumns.TryGetValue(type.TypeHandle, out IEnumerable<DatoryColumn> tc))
+            if (TableColumns.TryGetValue(type.TypeHandle, out IEnumerable<TableColumn> tc))
             {
                 return tc.ToList();
             }
 
-            var tableColumns = GetDatoryColumnsByReflection(type);
+            var tableColumns = GetTableColumnsByReflection(type);
 
-            DatoryColumns[type.TypeHandle] = tableColumns;
+            TableColumns[type.TypeHandle] = tableColumns;
             return tableColumns;
         }
 
@@ -101,9 +104,9 @@ namespace Datory
             return columnName;
         }
 
-        private static List<DatoryColumn> GetDatoryColumnsByReflection(Type type)
+        private static List<TableColumn> GetTableColumnsByReflection(Type type)
         {
-            var tableColumns = new List<DatoryColumn>();
+            var tableColumns = new List<TableColumn>();
 
             var properties = type.GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance).ToArray();
 
@@ -115,8 +118,10 @@ namespace Datory
                 var dataType = DataType.VarChar;
                 var dataLength = 0;
                 var dataExtend = false;
-                
-                if (propertyInfo.PropertyType == typeof(string))
+
+                var propertyType = Nullable.GetUnderlyingType(propertyInfo.PropertyType) ?? propertyInfo.PropertyType;
+
+                if (propertyType == typeof(string) || propertyType == typeof(char))
                 {
                     if (attribute.Text)
                     {
@@ -127,26 +132,30 @@ namespace Datory
                     {
                         dataType = DataType.VarChar;
                         dataLength = attribute.Length;
+                        if (dataLength <= 0)
+                        {
+                            dataLength = DatoryUtils.VarCharDefaultLength;
+                        }
                     }
                 }
-                else if (propertyInfo.PropertyType == typeof(int))
+                else if (propertyType == typeof(int))
                 {
                     dataType = DataType.Integer;
                 }
-                else if (propertyInfo.PropertyType == typeof(bool))
+                else if (propertyType == typeof(bool))
                 {
                     dataType = DataType.Boolean;
                 }
-                else if (propertyInfo.PropertyType == typeof(DateTimeOffset) || propertyInfo.PropertyType == typeof(DateTime))
+                else if (propertyType == typeof(DateTimeOffset) || propertyType == typeof(DateTime))
                 {
                     dataType = DataType.DateTime;
                 }
-                else if (propertyInfo.PropertyType == typeof(double) || propertyInfo.PropertyType == typeof(decimal))
+                else if (propertyType == typeof(double) || propertyType == typeof(decimal))
                 {
                     dataType = DataType.Decimal;
                 }
 
-                var tableColumn = new DatoryColumn
+                var tableColumn = new TableColumn
                 {
                     AttributeName = propertyInfo.Name,
                     DataType = dataType,
@@ -162,28 +171,28 @@ namespace Datory
 
         #endregion
 
-        public static T ToObject<T>(IDictionary<string, object> source) where T : class, new()
-        {
-            var obj = new T();
+        //public static T ToObject<T>(IDictionary<string, object> source) where T : class, new()
+        //{
+        //    var obj = new T();
 
-            var type = typeof(T);
-            foreach (var property in GetTypeProperties(type))
-            {
-                var val = source[property.Name];
-                if (val == null) continue;
-                if (property.PropertyType.IsGenericType && property.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
-                {
-                    var genericType = Nullable.GetUnderlyingType(property.PropertyType);
-                    if (genericType != null) property.SetValue(obj, Convert.ChangeType(val, genericType), null);
-                }
-                else
-                {
-                    property.SetValue(obj, Convert.ChangeType(val, property.PropertyType), null);
-                }
-            }
+        //    var type = typeof(T);
+        //    foreach (var property in GetTypeProperties(type))
+        //    {
+        //        var val = source[property.Name];
+        //        if (val == null) continue;
+        //        if (property.PropertyType.IsGenericType && property.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
+        //        {
+        //            var genericType = Nullable.GetUnderlyingType(property.PropertyType);
+        //            if (genericType != null) property.SetValue(obj, Convert.ChangeType(val, genericType), null);
+        //        }
+        //        else
+        //        {
+        //            property.SetValue(obj, Convert.ChangeType(val, property.PropertyType), null);
+        //        }
+        //    }
 
-            return obj;
-        }
+        //    return obj;
+        //}
 
         public static IDictionary<string, object> ToDictionary(object source, BindingFlags bindingAttr = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance)
         {
@@ -203,20 +212,20 @@ namespace Datory
             return props.Select(x => new KeyValuePair<string, object>(x.Name, x.GetValue(parameters, null))).ToList();
         }
 
-        public static T GetValue<T>(object obj, string propertyName)
-        {
-            var value = GetValue(obj, propertyName);
+        //public static T GetValue<T>(object obj, string propertyName)
+        //{
+        //    var value = GetValue(obj, propertyName);
 
-            switch (value)
-            {
-                case null:
-                    return default(T);
-                case T variable:
-                    return variable;
-                default:
-                    return default(T);
-            }
-        }
+        //    switch (value)
+        //    {
+        //        case null:
+        //            return default(T);
+        //        case T variable:
+        //            return variable;
+        //        default:
+        //            return default(T);
+        //    }
+        //}
 
         public static object GetValue(object obj, string propertyName)
         {

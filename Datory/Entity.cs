@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
+using Datory.Utils;
 using Newtonsoft.Json;
 
 namespace Datory
 {
-    [JsonConverter(typeof(DynamicEntityConverter))]
-    public class DynamicEntity : DynamicObject
+    [JsonConverter(typeof(EntityBaseConverter))]
+    public class Entity : DynamicObject, IEntity
     {
         [TableColumn]
         public int Id { get; set; }
@@ -26,7 +27,7 @@ namespace Datory
 
         private readonly Dictionary<string, object> _extendDictionary;
 
-        protected DynamicEntity()
+        protected Entity()
         {
             var type = GetType();
             _propertyNames = ReflectionUtils.GetPropertyNames(type);
@@ -35,7 +36,7 @@ namespace Datory
             _extendDictionary = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
         }
 
-        protected DynamicEntity(IDictionary<string, object> dict): this()
+        protected Entity(IDictionary<string, object> dict): this()
         {
             if (dict == null) return;
 
@@ -104,13 +105,20 @@ namespace Datory
 
         public void Sync(string json)
         {
-            var dict = DatoryUtils.ToDictionary(json);
-            foreach (var o in dict)
+            var dict = ConvertUtils.ToDictionary(json);
+            Sync(dict);
+        }
+
+        public void Sync(Dictionary<string, object> dictionary)
+        {
+            if (dictionary == null) return;
+
+            foreach (var o in dictionary)
             {
-                if (!_columnNames.Contains(o.Key, StringComparer.OrdinalIgnoreCase))
-                {
+                //if (!_columnNames.Contains(o.Key, StringComparer.OrdinalIgnoreCase))
+                //{
                     Set(o.Key, o.Value);
-                }
+                //}
             }
         }
 
@@ -189,15 +197,13 @@ namespace Datory
 
             return ContainsIgnoreCase(_propertyNames, name, out var realName)
                 ? ReflectionUtils.GetValue(this, realName)
-                : DatoryUtils.Get(_extendDictionary, name);
+                : ConvertUtils.Get(_extendDictionary, name);
         }
 
         public T Get<T>(string name, T defaultValue = default(T))
         {
-            return DatoryUtils.Get(Get(name), defaultValue);
+            return ConvertUtils.Get(Get(name), defaultValue);
         }
-
-        #region DynamicObject
 
         public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
@@ -210,16 +216,14 @@ namespace Datory
             Set(binder.Name, value);
             return true;
         }
-
-        #endregion
     }
 
-    public class DynamicEntityConverter : JsonConverter
+    public class EntityBaseConverter : JsonConverter
     {
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            throw new NotImplementedException();
-        }
+        //public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        //{
+        //    throw new NotImplementedException();
+        //}
 
         /// <summary>
         /// 确定此实例是否可以转换指定的对象类型。
@@ -230,7 +234,7 @@ namespace Datory
         /// </returns>
         public override bool CanConvert(Type objectType)
         {
-            return objectType.BaseType == typeof(DynamicEntity);
+            return typeof(Entity).IsAssignableFrom(objectType);
         }
 
         /// <summary>
@@ -241,7 +245,7 @@ namespace Datory
         /// <param name="serializer">序列化类</param>
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            var entity = value as DynamicEntity;
+            var entity = value as Entity;
             serializer.Serialize(writer, entity?.ToDictionary());
         }
 
@@ -253,11 +257,26 @@ namespace Datory
         ///// <param name="existingValue">正在读取的对象的现有值</param>
         ///// <param name="serializer">序列化类</param>
         ///// <returns>返回对象</returns>
-        //public override object ReadJson(JsonReader reader, Type objectType, object existingValue,
-        //    JsonSerializer serializer)
-        //{
-        //    var value = (string)reader.Value;
-        //    return string.IsNullOrEmpty(value) ? null : new DataType(value);
-        //}
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue,
+            JsonSerializer serializer)
+        {
+            var dict = serializer.Deserialize<Dictionary<string, object>>(reader);
+            var instance = Activator.CreateInstance(objectType);
+            ((Entity)instance).Sync(dict);
+            return instance;
+
+            //var value = (string)reader.Value;
+            //if (!string.IsNullOrEmpty(value))
+            //{
+            //    var instance = Activator.CreateInstance(objectType);
+            //    ((EntityBase)instance).Sync(value);
+            //    return instance;
+            //}
+
+            //return null;
+
+
+            //return string.IsNullOrEmpty(value) ? null : serializer.Deserialize<Type>(reader);
+        }
     }
 }

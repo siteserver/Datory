@@ -2,19 +2,24 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 
-namespace Datory
+[assembly: InternalsVisibleTo("Datory.Tests")]
+
+namespace Datory.Utils
 {
-    public static class DatoryUtils
+    internal static class ConvertUtils
     {
+        
+
         // ------------------- transateutis ----------------------------
 
-        public static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
+        private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
         {
             ContractResolver = new CamelCasePropertyNamesContractResolver(),
             Converters = new List<JsonConverter>
@@ -43,7 +48,7 @@ namespace Datory
             }
         }
 
-        public static T JsonDeserialize<T>(string json, T defaultValue = default(T))
+        private static T JsonDeserialize<T>(string json, T defaultValue = default(T))
         {
             try
             {
@@ -66,10 +71,10 @@ namespace Datory
             return dict.TryGetValue(name, out var extendValue) ? extendValue : null;
         }
 
-        public static T Get<T>(IDictionary<string, object> dict, string name, T defaultValue)
-        {
-            return Get(Get(dict, name), defaultValue);
-        }
+        //public static T Get<T>(IDictionary<string, object> dict, string name, T defaultValue)
+        //{
+        //    return Get(Get(dict, name), defaultValue);
+        //}
 
         public static T Get<T>(object value, T defaultValue = default(T))
         {
@@ -125,7 +130,7 @@ namespace Datory
             return dict;
         }
 
-        public static List<string> StringCollectionToStringList(string collection, char split = ',')
+        public static IList<string> StringCollectionToStringList(string collection, char split = ',')
         {
             var list = new List<string>();
             if (string.IsNullOrEmpty(collection)) return list;
@@ -144,18 +149,18 @@ namespace Datory
             return boolean;
         }
 
-        public static int ToInt(string intStr, int defaultValue = 0)
-        {
-            if (!int.TryParse(intStr?.Trim().TrimStart('0'), out var i))
-            {
-                i = defaultValue;
-            }
-            if (i < 0)
-            {
-                i = defaultValue;
-            }
-            return i;
-        }
+        //public static int ToInt(string intStr, int defaultValue = 0)
+        //{
+        //    if (!int.TryParse(intStr?.Trim().TrimStart('0'), out var i))
+        //    {
+        //        i = defaultValue;
+        //    }
+        //    if (i < 0)
+        //    {
+        //        i = defaultValue;
+        //    }
+        //    return i;
+        //}
 
         public static decimal ToDecimal(string intStr, decimal defaultValue = 0)
         {
@@ -222,19 +227,19 @@ namespace Datory
         /// </summary>
         /// <param name="path">文件路径</param>
         /// <returns></returns>
-        public static string GetDirectoryPath(string path)
+        private static string GetDirectoryPath(string path)
         {
             var ext = Path.GetExtension(path);
             var directoryPath = !string.IsNullOrEmpty(ext) ? Path.GetDirectoryName(path) : path;
             return directoryPath;
         }
 
-        public static bool IsDirectoryExists(string directoryPath)
+        private static bool IsDirectoryExists(string directoryPath)
         {
             return Directory.Exists(directoryPath);
         }
 
-        public static void CreateDirectoryIfNotExists(string path)
+        private static void CreateDirectoryIfNotExists(string path)
         {
             var directoryPath = GetDirectoryPath(path);
 

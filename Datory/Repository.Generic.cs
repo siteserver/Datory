@@ -1,47 +1,47 @@
 ﻿using System.Collections.Generic;
+using Datory.Utils;
 using SqlKata;
 
 namespace Datory
 {
-    public abstract class GenericRepository<T> : GenericRepositoryAbstract where T : DynamicEntity, new()
+    public partial class Repository<T> : IRepository where T : Entity, new()
     {
-        public override string TableName => ReflectionUtils.GetTableName(typeof(T));
+        public DatabaseType DatabaseType { get; }
+        public string ConnectionString { get; }
+        public string TableName { get; }
+        public List<TableColumn> TableColumns { get; }
+        public Query Q => new Query();
 
-        public override List<DatoryColumn> TableColumns => ReflectionUtils.GetTableColumns(typeof(T));
-
-        protected int InsertObject(T dataInfo)
+        public Repository()
         {
-            return base.InsertObject(dataInfo);
+            DatabaseType = DatoryUtils.GetDatabaseType();
+            ConnectionString = DatoryUtils.GetConnectionString();
+            TableName = ReflectionUtils.GetTableName(typeof(T));
+            TableColumns = ReflectionUtils.GetTableColumns(typeof(T));
         }
 
-        protected T GetObjectById(int id)
+        public Repository(DatabaseType databaseType, string connectionString)
         {
-            return base.GetObjectById<T>(id);
+            DatabaseType = databaseType;
+            ConnectionString = connectionString;
+            TableName = ReflectionUtils.GetTableName(typeof(T));
+            TableColumns = ReflectionUtils.GetTableColumns(typeof(T));
         }
 
-        protected T GetObjectByGuid(string guid)
+        public Repository(DatabaseType databaseType, string connectionString, string tableName)
         {
-            return base.GetObjectByGuid<T>(guid);
+            DatabaseType = databaseType;
+            ConnectionString = connectionString;
+            TableName = tableName;
+            TableColumns = ReflectionUtils.GetTableColumns(typeof(T));
         }
 
-        protected T GetObject(Query query = null)
+        public Repository(DatabaseType databaseType, string connectionString, string tableName, List<TableColumn> tableColumns)
         {
-            return base.GetObject<T>(query);
-        }
-
-        protected IList<T> GetObjectList(Query query = null)
-        {
-            return base.GetObjectList<T>(query);
-        }
-
-        protected bool UpdateObject(T dataInfo)
-        {
-            return base.UpdateObject(dataInfo);
-        }
-
-        protected bool UpdateObject(T dataInfo, params string[] columnNames)
-        {
-            return base.UpdateObject(dataInfo, columnNames);
+            DatabaseType = databaseType;
+            ConnectionString = connectionString;
+            TableName = tableName;
+            TableColumns = tableColumns;
         }
 
         //        private readonly Lazy<Compiler> _compiler = new Lazy<Compiler>(() => SqlDifferences.GetCompiler(WebConfigUtils.DatabaseType));

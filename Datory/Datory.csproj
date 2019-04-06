@@ -2,36 +2,12 @@
 
   <PropertyGroup>
     <TargetFrameworks>net452;netstandard2.0</TargetFrameworks>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <PackageId>Datory</PackageId>
-    <Version>1.0.0</Version>
-    <PackageVersion>1.0.0</PackageVersion>
-    <Authors>SiteServer CMS</Authors>
-    <Company>SiteServer CMS</Company>
-    <Product>Datory</Product>
-    <Description>基于 Dapper 及 SqlKata 的通用数据库操作库，支持SqlServer、MySql、PostgreSql以及Oracle。</Description>
-    <PackageLicenseUrl>https://github.com/siteserver/Datory/blob/master/LICENSE</PackageLicenseUrl>
-    <PackageProjectUrl>https://github.com/siteserver/Datory</PackageProjectUrl>
-    <PackageIconUrl>https://github.com/siteserver/SiteServer.Plugin/raw/master/logo.png</PackageIconUrl>
-    <Copyright>Copyright © SiteServer CMS 2018</Copyright>
-    <PackageTags>Datory ORM SqlServer MySql PostgreSql Oracle</PackageTags>
-    <RepositoryUrl>https://github.com/siteserver/Datory</RepositoryUrl>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageReleaseNotes>Add netstandard2.0 support</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Datory\DatoryHelper.cs" />
-    <Compile Remove="Datory\Differences.cs" />
-    <Compile Remove="Datory\InputListItem.cs" />
-    <Compile Remove="Datory\InputStyle.cs" />
-    <Compile Remove="Datory\InputType.cs" />
-    <Compile Remove="Datory\ValidateType.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Dapper" Version="1.60.5" />
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+    <PackageReference Include="Dapper" Version="1.60.6" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
     <PackageReference Include="Npgsql" Version="4.0.5" />
     <PackageReference Include="MySql.Data" Version="8.0.15" />
     <PackageReference Include="SqlKata" Version="1.1.7" />
@@ -39,6 +15,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net452'">
+    <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System" />
     <PackageReference Include="Oracle.ManagedDataAccess">
       <Version>18.6.0</Version>
     </PackageReference>
