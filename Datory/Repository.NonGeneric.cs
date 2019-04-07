@@ -9,7 +9,6 @@ namespace Datory
         public string ConnectionString { get; }
         public string TableName { get; }
         public List<TableColumn> TableColumns { get; }
-        public Query Q => new Query();
 
         public Repository(string tableName)
         {

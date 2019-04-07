@@ -11,6 +11,7 @@ using Datory.Utils;
 using MySql.Data.MySqlClient;
 using Npgsql;
 using Oracle.ManagedDataAccess.Client;
+using SqlKata;
 
 namespace Datory
 {
