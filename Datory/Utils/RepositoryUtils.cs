@@ -123,10 +123,10 @@ namespace Datory.Utils
             var xQuery = NewQuery(tableName, query);
             xQuery.ClearComponent("select").SelectRaw("COUNT(1)").ClearComponent("order");
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 exists = database.Connection.ExecuteScalar<bool>(sql, bindings);
-            }
+            //}
 
             return exists;
         }
@@ -137,10 +137,10 @@ namespace Datory.Utils
             var xQuery = NewQuery(tableName, query);
             xQuery.ClearComponent("order").AsCount();
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 count = database.Connection.ExecuteScalar<int>(sql, bindings);
-            }
+            //}
 
             return count;
         }
@@ -173,10 +173,10 @@ namespace Datory.Utils
 
             xQuery.AsSum(columnName);
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 count = database.Connection.ExecuteScalar<int>(sql, bindings);
-            }
+            //}
 
             return count;
         }
@@ -190,10 +190,10 @@ namespace Datory.Utils
             var xQuery = NewQuery(tableName, query);
             xQuery.Limit(1);
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 value = database.Connection.QueryFirstOrDefault<TValue>(sql, bindings);
-            }
+            //}
 
             return value;
         }
@@ -204,10 +204,10 @@ namespace Datory.Utils
 
             var xQuery = NewQuery(tableName, query);
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 values = database.Connection.Query<TValue>(sql, bindings).ToList();
-            }
+            //}
 
             return values;
         }
@@ -223,10 +223,10 @@ namespace Datory.Utils
 
             xQuery.AsMax(columnName);
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 value = database.Connection.QueryFirstOrDefault<int?>(sql, bindings);
-            }
+            //}
 
             return value;
         }
@@ -237,10 +237,10 @@ namespace Datory.Utils
             var xQuery = NewQuery(tableName, query);
             xQuery.ClearComponent("select").SelectRaw("*").Limit(1);
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 value = database.Connection.QueryFirstOrDefault<T>(sql, bindings);
-            }
+            //}
 
             SyncAndCheckGuid(database, tableName, value);
 
@@ -253,10 +253,10 @@ namespace Datory.Utils
             var xQuery = NewQuery(tableName, query);
             xQuery.ClearComponent("select").SelectRaw("*");
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 values = database.Connection.Query<T>(sql, bindings).ToList();
-            }
+            //}
             foreach (var dataInfo in values)
             {
                 SyncAndCheckGuid(database, tableName, dataInfo);
@@ -291,10 +291,10 @@ namespace Datory.Utils
             var xQuery = NewQuery(tableName);
             xQuery.AsInsert(dictionary, true);
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 dataInfo.Id = database.Connection.QueryFirst<int>(sql, bindings);
-            }
+            //}
 
             return dataInfo.Id;
         }
@@ -306,10 +306,10 @@ namespace Datory.Utils
             xQuery.AsDelete();
 
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 affected = database.Connection.Execute(sql, bindings);
-            }
+            //}
 
             return affected;
         }
@@ -322,10 +322,10 @@ namespace Datory.Utils
             xQuery.Method = "update";
 
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 affected = database.Connection.Execute(sql, bindings);
-            }
+            //}
 
             return affected;
         }

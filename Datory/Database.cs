@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using Dapper;
 using Datory.Utils;
 
 namespace Datory
@@ -16,24 +17,26 @@ namespace Datory
 
         public IDbConnection Connection { get; }
 
-        public Database(DatabaseType databaseType, string connectionString, IDbConnection connection)
+        public Database(DatabaseType databaseType, IDbConnection connection)
         {
             DatabaseType = databaseType;
-            ConnectionString = connectionString;
             Connection = connection;
 
-            if (databaseType == DatabaseType.Oracle)
-            {
-                var index1 = connectionString.IndexOf("SERVICE_NAME=", StringComparison.Ordinal);
-                var index2 = connectionString.IndexOf(")));", StringComparison.Ordinal);
-                Name = connectionString.Substring(index1 + 13, index2 - index1 - 13);
-            }
-            else
-            {
-                Name = SqlUtils.GetValueFromConnectionString(ConnectionString, "Database");
-            }
+            ConnectionString = connection.ConnectionString;
+            Name = connection.Database;
 
-            Owner = SqlUtils.GetConnectionStringUserId(connectionString);
+            //if (databaseType == DatabaseType.Oracle)
+            //{
+            //    var index1 = connectionString.IndexOf("SERVICE_NAME=", StringComparison.Ordinal);
+            //    var index2 = connectionString.IndexOf(")));", StringComparison.Ordinal);
+            //    Name = connectionString.Substring(index1 + 13, index2 - index1 - 13);
+            //}
+            //else
+            //{
+            //    Name = SqlUtils.GetValueFromConnectionString(ConnectionString, "Database");
+            //}
+
+            Owner = SqlUtils.GetConnectionStringUserId(ConnectionString);
         }
     }
 }

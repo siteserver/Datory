@@ -28,12 +28,12 @@ namespace Datory
 
                 try
                 {
-                    using (database.Connection)
-                    {
+                    //using (database.Connection)
+                    //{
                         var version = database.Connection.ExecuteScalar<string>(sqlString);
 
                         useLegacyPagination = ConvertUtils.ToDecimal(version) < 11;
-                    }
+                    //}
                 }
                 catch
                 {
@@ -64,21 +64,21 @@ namespace Datory
                 // ANSI SQL way.  Works in PostgreSQL, MSSQL, MySQL.  
                 if (database.DatabaseType != DatabaseType.Oracle)
                 {
-                    using (database.Connection)
-                    {
+                    //using (database.Connection)
+                    //{
                         var sql = $"select case when exists((select * from information_schema.tables where table_name = '{tableName}')) then 1 else 0 end";
 
                         exists = database.Connection.ExecuteScalar<int>(sql) == 1;
-                    }
+                    //}
                 }
                 else
                 {
-                    using (database.Connection)
-                    {
+                    //using (database.Connection)
+                    //{
                         var sql = $"SELECT COUNT(*) FROM ALL_OBJECTS WHERE OBJECT_TYPE = 'TABLE' AND OWNER = '{SqlUtils.GetConnectionStringUserId(database.ConnectionString).ToUpper()}' and OBJECT_NAME = '{tableName}'";
 
                         exists = database.Connection.ExecuteScalar<int>(sql) == 1;
-                    }
+                    //}
                 }
             }
             catch
@@ -86,12 +86,12 @@ namespace Datory
                 try
                 {
                     // Other DB.  Graceful degradation
-                    using (database.Connection)
-                    {
+                    //using (database.Connection)
+                    //{
                         var sql = $"select 1 from {tableName} where 1 = 0";
 
                         exists = database.Connection.ExecuteScalar<int>(sql) == 1;
-                    }
+                    //}
                 }
                 catch
                 {
@@ -120,10 +120,10 @@ namespace Datory
                 var sqlString =
                     SqlUtils.GetAddColumnsSqlString(database.DatabaseType, tableName, $"{identityColumnName} {SqlUtils.GetAutoIncrementDataType(database.DatabaseType, true)}");
 
-                using (database.Connection)
-                {
+                //using (database.Connection)
+                //{
                     database.Connection.Execute(sqlString);
-                }
+                //}
 
                 columns.Insert(0, new TableColumn
                 {
@@ -163,13 +163,13 @@ namespace Datory
 
             if (list.Count <= 0) return;
 
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 foreach (var sqlString in list)
                 {
                     database.Connection.Execute(sqlString);
                 }
-            }
+            //}
         }
 
         public static void CreateTable(Database database, string tableName, List<TableColumn> tableColumns)
@@ -252,10 +252,10 @@ namespace Datory
                 ? ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
                 : ")");
             
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 database.Connection.Execute(sqlBuilder.ToString());
-            }
+            //}
         }
 
         public static void CreateIndex(Database database, string tableName, string indexName, params string[] columns)
@@ -278,10 +278,10 @@ namespace Datory
             sqlString.Length--;
             sqlString.Append(")");
 
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 database.Connection.Execute(sqlString.ToString());
-            }
+            //}
         }
 
         public static List<string> GetColumnNames(Database database, string tableName)
@@ -345,21 +345,21 @@ namespace Datory
             if (string.IsNullOrEmpty(sqlString)) return new List<string>();
 
             IEnumerable<string> tableNames;
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 tableNames = database.Connection.Query<string>(sqlString);
-            }
+            //}
             return tableNames.Where(tableName => !string.IsNullOrEmpty(tableName)).ToList();
         }
 
         public static void DropTable(Database database, string tableName)
         {
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 var sql = $"DROP TABLE {tableName}";
 
                 database.Connection.Execute(sql);
-            }
+            //}
         }
 
         //public static bool DropTable(Database database, string tableName, out Exception ex)

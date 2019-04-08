@@ -462,10 +462,10 @@ namespace Datory.Utils
                 $"SELECT COLUMN_NAME AS columnName, DATA_TYPE AS DataType, DATA_PRECISION AS DataPrecision, DATA_SCALE AS DataScale, CHAR_LENGTH AS CharLength, DATA_DEFAULT AS DataDefault FROM all_tab_cols WHERE OWNER = '{owner}' and table_name = '{tableName}' and user_generated = 'YES' ORDER BY COLUMN_ID";
 
             IEnumerable<dynamic> columns;
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 columns = database.Connection.Query<dynamic>(sqlString);
-            }
+            //}
 
             foreach (var column in columns)
             {
@@ -506,10 +506,10 @@ on cu.constraint_name = au.constraint_name
 and au.constraint_type = 'P' and cu.OWNER = '{owner}' and cu.table_name = '{tableName}'";
 
             IEnumerable<string> columnNames;
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 columnNames = database.Connection.Query<string>(sqlString);
-            }
+            //}
 
             foreach (var columnName in columnNames)
             {
@@ -531,10 +531,10 @@ and au.constraint_type = 'P' and cu.OWNER = '{owner}' and cu.table_name = '{tabl
                 $"SELECT COLUMN_NAME AS ColumnName, UDT_NAME AS UdtName, CHARACTER_MAXIMUM_LENGTH AS CharacterMaximumLength, COLUMN_DEFAULT AS ColumnDefault FROM information_schema.columns WHERE table_catalog = '{database.Owner}' AND table_name = '{tableName.ToLower()}' ORDER BY ordinal_position";
 
             IEnumerable<dynamic> columns;
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 columns = database.Connection.Query<dynamic>(sqlString);
-            }
+            //}
 
             foreach (var column in columns)
             {
@@ -563,10 +563,10 @@ and au.constraint_type = 'P' and cu.OWNER = '{owner}' and cu.table_name = '{tabl
                 $"select column_name AS ColumnName, constraint_name AS ConstraintName from information_schema.key_column_usage where table_catalog = '{database.Owner}' and table_name = '{tableName.ToLower()}';";
 
             IEnumerable<dynamic> rows;
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 rows = database.Connection.Query<dynamic>(sqlString);
-            }
+            //}
 
             foreach (var row in rows)
             {
@@ -598,10 +598,10 @@ and au.constraint_type = 'P' and cu.OWNER = '{owner}' and cu.table_name = '{tabl
             var sqlString =
                 $"select id from [{database.Owner}]..sysobjects where type = 'U' and category<>2 and name='{tableName}'";
 
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 tableId = database.Connection.QueryFirstOrDefault<string>(sqlString);
-            }
+            //}
 
             if (string.IsNullOrEmpty(tableId)) return new List<TableColumn>();
 
@@ -612,10 +612,10 @@ and au.constraint_type = 'P' and cu.OWNER = '{owner}' and cu.table_name = '{tabl
                 $"select C.name AS ColumnName, T.name AS DataTypeName, C.length AS Length, C.colstat AS IsPrimaryKeyInt, case when C.autoval is null then 0 else 1 end AS IsIdentityInt from [{database.Owner}]..systypes T, [{database.Owner}]..syscolumns C where C.id={tableId} and C.xtype=T.xusertype order by C.colid";
 
             IEnumerable<dynamic> columns;
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 columns = database.Connection.Query<dynamic>(sqlString);
-            }
+            //}
 
             foreach (var column in columns)
             {
@@ -657,10 +657,10 @@ and au.constraint_type = 'P' and cu.OWNER = '{owner}' and cu.table_name = '{tabl
 
                 sqlString = $"select name from syscolumns where id = object_id(N'{tableName}') and COLUMNPROPERTY(id, name,'IsIdentity')= 1";
 
-                using (database.Connection)
-                {
+                //using (database.Connection)
+                //{
                     clName = database.Connection.QueryFirstOrDefault<string>(sqlString);
-                }
+                //}
 
                 foreach (var info in list)
                 {
@@ -683,10 +683,10 @@ and au.constraint_type = 'P' and cu.OWNER = '{owner}' and cu.table_name = '{tabl
 
             IEnumerable<dynamic> columns;
 
-            using (database.Connection)
-            {
+            //using (database.Connection)
+            //{
                 columns = database.Connection.Query<dynamic>(sqlString);
-            }
+            //}
 
             foreach (var column in columns)
             {
