@@ -10,30 +10,30 @@ namespace Datory.Utils
 {
     internal static class SqlUtils
     {
-        public static Compiler GetCompiler(DatabaseType databaseType, string connectionString)
+        public static Compiler GetCompiler(Database database)
         {
             Compiler compiler = null;
 
-            if (databaseType == DatabaseType.MySql)
+            if (database.DatabaseType == DatabaseType.MySql)
             {
                 compiler = new MySqlCompiler();
             }
-            else if (databaseType == DatabaseType.SqlServer)
+            else if (database.DatabaseType == DatabaseType.SqlServer)
             {
                 compiler = new SqlServerCompiler
                 {
-                    UseLegacyPagination = DatoryUtils.IsUseLegacyPagination(databaseType, connectionString)
+                    UseLegacyPagination = DatoryUtils.IsUseLegacyPagination(database)
                 };
             }
-            else if (databaseType == DatabaseType.PostgreSql)
+            else if (database.DatabaseType == DatabaseType.PostgreSql)
             {
                 compiler = new PostgresCompiler();
             }
-            else if (databaseType == DatabaseType.Oracle)
+            else if (database.DatabaseType == DatabaseType.Oracle)
             {
                 compiler = new OracleCompiler
                 {
-                    UseLegacyPagination = DatoryUtils.IsUseLegacyPagination(databaseType, connectionString)
+                    UseLegacyPagination = DatoryUtils.IsUseLegacyPagination(database)
                 };
             }
 
@@ -281,7 +281,7 @@ namespace Datory.Utils
             return databaseType == DatabaseType.SqlServer ? $"[{identifier}]" : identifier;
         }
 
-        private static string GetValueFromConnectionString(string connectionString, string attribute)
+        public static string GetValueFromConnectionString(string connectionString, string attribute)
         {
             var retVal = string.Empty;
             if (!string.IsNullOrEmpty(connectionString) && !string.IsNullOrEmpty(attribute))
@@ -300,17 +300,6 @@ namespace Datory.Utils
                 }
             }
             return retVal;
-        }
-
-        public static string GetDatabaseNameFormConnectionString(DatabaseType databaseType, string connectionString)
-        {
-            if (databaseType == DatabaseType.Oracle)
-            {
-                var index1 = connectionString.IndexOf("SERVICE_NAME=", StringComparison.Ordinal);
-                var index2 = connectionString.IndexOf(")));", StringComparison.Ordinal);
-                return connectionString.Substring(index1 + 13, index2 - index1 - 13);
-            }
-            return GetValueFromConnectionString(connectionString, "Database");
         }
 
         private static DataType ToMySqlDataType(string dataTypeStr)
@@ -463,9 +452,9 @@ namespace Datory.Utils
             return dataType;
         }
 
-        public static List<TableColumn> GetOracleColumns(DatabaseType databaseType, string connectionString, string tableName)
+        public static List<TableColumn> GetOracleColumns(Database database, string tableName)
         {
-            var owner = GetConnectionStringUserId(connectionString).ToUpper();
+            var owner = database.Owner.ToUpper();
             tableName = tableName.ToUpper();
 
             var list = new List<TableColumn>();
@@ -473,9 +462,9 @@ namespace Datory.Utils
                 $"SELECT COLUMN_NAME AS columnName, DATA_TYPE AS DataType, DATA_PRECISION AS DataPrecision, DATA_SCALE AS DataScale, CHAR_LENGTH AS CharLength, DATA_DEFAULT AS DataDefault FROM all_tab_cols WHERE OWNER = '{owner}' and table_name = '{tableName}' and user_generated = 'YES' ORDER BY COLUMN_ID";
 
             IEnumerable<dynamic> columns;
-            using (var conn = DatoryUtils.GetConnection(databaseType, connectionString))
+            using (database.Connection)
             {
-                columns = conn.Query<dynamic>(sqlString);
+                columns = database.Connection.Query<dynamic>(sqlString);
             }
 
             foreach (var column in columns)
@@ -517,9 +506,9 @@ on cu.constraint_name = au.constraint_name
 and au.constraint_type = 'P' and cu.OWNER = '{owner}' and cu.table_name = '{tableName}'";
 
             IEnumerable<string> columnNames;
-            using (var conn = DatoryUtils.GetConnection(databaseType, connectionString))
+            using (database.Connection)
             {
-                columnNames = conn.Query<string>(sqlString);
+                columnNames = database.Connection.Query<string>(sqlString);
             }
 
             foreach (var columnName in columnNames)
@@ -535,16 +524,16 @@ and au.constraint_type = 'P' and cu.OWNER = '{owner}' and cu.table_name = '{tabl
             return list;
         }
 
-        public static List<TableColumn> GetPostgreSqlColumns(DatabaseType databaseType, string connectionString, string databaseName, string tableName)
+        public static List<TableColumn> GetPostgreSqlColumns(Database database, string tableName)
         {
             var list = new List<TableColumn>();
             var sqlString =
-                $"SELECT COLUMN_NAME AS ColumnName, UDT_NAME AS UdtName, CHARACTER_MAXIMUM_LENGTH AS CharacterMaximumLength, COLUMN_DEFAULT AS ColumnDefault FROM information_schema.columns WHERE table_catalog = '{databaseName}' AND table_name = '{tableName.ToLower()}' ORDER BY ordinal_position";
+                $"SELECT COLUMN_NAME AS ColumnName, UDT_NAME AS UdtName, CHARACTER_MAXIMUM_LENGTH AS CharacterMaximumLength, COLUMN_DEFAULT AS ColumnDefault FROM information_schema.columns WHERE table_catalog = '{database.Owner}' AND table_name = '{tableName.ToLower()}' ORDER BY ordinal_position";
 
             IEnumerable<dynamic> columns;
-            using (var conn = DatoryUtils.GetConnection(databaseType, connectionString))
+            using (database.Connection)
             {
-                columns = conn.Query<dynamic>(sqlString);
+                columns = database.Connection.Query<dynamic>(sqlString);
             }
 
             foreach (var column in columns)
@@ -571,12 +560,12 @@ and au.constraint_type = 'P' and cu.OWNER = '{owner}' and cu.table_name = '{tabl
             }
 
             sqlString =
-                $"select column_name AS ColumnName, constraint_name AS ConstraintName from information_schema.key_column_usage where table_catalog = '{databaseName}' and table_name = '{tableName.ToLower()}';";
+                $"select column_name AS ColumnName, constraint_name AS ConstraintName from information_schema.key_column_usage where table_catalog = '{database.Owner}' and table_name = '{tableName.ToLower()}';";
 
             IEnumerable<dynamic> rows;
-            using (var conn = DatoryUtils.GetConnection(databaseType, connectionString))
+            using (database.Connection)
             {
-                rows = conn.Query<dynamic>(sqlString);
+                rows = database.Connection.Query<dynamic>(sqlString);
             }
 
             foreach (var row in rows)
@@ -602,16 +591,16 @@ and au.constraint_type = 'P' and cu.OWNER = '{owner}' and cu.table_name = '{tabl
             return list;
         }
 
-        public static List<TableColumn> GetSqlServerColumns(DatabaseType databaseType, string connectionString, string databaseName, string tableName)
+        public static List<TableColumn> GetSqlServerColumns(Database database, string tableName)
         {
             string tableId;
 
             var sqlString =
-                $"select id from [{databaseName}]..sysobjects where type = 'U' and category<>2 and name='{tableName}'";
+                $"select id from [{database.Owner}]..sysobjects where type = 'U' and category<>2 and name='{tableName}'";
 
-            using (var conn = DatoryUtils.GetConnection(databaseType, connectionString))
+            using (database.Connection)
             {
-                tableId = conn.QueryFirstOrDefault<string>(sqlString);
+                tableId = database.Connection.QueryFirstOrDefault<string>(sqlString);
             }
 
             if (string.IsNullOrEmpty(tableId)) return new List<TableColumn>();
@@ -620,12 +609,12 @@ and au.constraint_type = 'P' and cu.OWNER = '{owner}' and cu.table_name = '{tabl
             var isIdentityExist = false;
 
             sqlString =
-                $"select C.name AS ColumnName, T.name AS DataTypeName, C.length AS Length, C.colstat AS IsPrimaryKeyInt, case when C.autoval is null then 0 else 1 end AS IsIdentityInt from [{databaseName}]..systypes T, [{databaseName}]..syscolumns C where C.id={tableId} and C.xtype=T.xusertype order by C.colid";
+                $"select C.name AS ColumnName, T.name AS DataTypeName, C.length AS Length, C.colstat AS IsPrimaryKeyInt, case when C.autoval is null then 0 else 1 end AS IsIdentityInt from [{database.Owner}]..systypes T, [{database.Owner}]..syscolumns C where C.id={tableId} and C.xtype=T.xusertype order by C.colid";
 
             IEnumerable<dynamic> columns;
-            using (var conn = DatoryUtils.GetConnection(databaseType, connectionString))
+            using (database.Connection)
             {
-                columns = conn.Query<dynamic>(sqlString);
+                columns = database.Connection.Query<dynamic>(sqlString);
             }
 
             foreach (var column in columns)
@@ -668,9 +657,9 @@ and au.constraint_type = 'P' and cu.OWNER = '{owner}' and cu.table_name = '{tabl
 
                 sqlString = $"select name from syscolumns where id = object_id(N'{tableName}') and COLUMNPROPERTY(id, name,'IsIdentity')= 1";
 
-                using (var conn = DatoryUtils.GetConnection(databaseType, connectionString))
+                using (database.Connection)
                 {
-                    clName = conn.QueryFirstOrDefault<string>(sqlString);
+                    clName = database.Connection.QueryFirstOrDefault<string>(sqlString);
                 }
 
                 foreach (var info in list)
@@ -685,18 +674,18 @@ and au.constraint_type = 'P' and cu.OWNER = '{owner}' and cu.table_name = '{tabl
             return list;
         }
 
-        public static List<TableColumn> GetMySqlColumns(DatabaseType databaseType, string connectionString, string databaseName, string tableName)
+        public static List<TableColumn> GetMySqlColumns(Database database, string tableName)
         {
             var list = new List<TableColumn>();
 
             var sqlString =
-                $"select COLUMN_NAME AS ColumnName, DATA_TYPE AS DataType, CHARACTER_MAXIMUM_LENGTH AS DataLength, COLUMN_KEY AS ColumnKey, EXTRA AS Extra from information_schema.columns where table_schema = '{databaseName}' and table_name = '{tableName}' order by table_name,ordinal_position; ";
+                $"select COLUMN_NAME AS ColumnName, DATA_TYPE AS DataType, CHARACTER_MAXIMUM_LENGTH AS DataLength, COLUMN_KEY AS ColumnKey, EXTRA AS Extra from information_schema.columns where table_schema = '{database.Owner}' and table_name = '{tableName}' order by table_name,ordinal_position; ";
 
             IEnumerable<dynamic> columns;
 
-            using (var conn = DatoryUtils.GetConnection(databaseType, connectionString))
+            using (database.Connection)
             {
-                columns = conn.Query<dynamic>(sqlString);
+                columns = database.Connection.Query<dynamic>(sqlString);
             }
 
             foreach (var column in columns)

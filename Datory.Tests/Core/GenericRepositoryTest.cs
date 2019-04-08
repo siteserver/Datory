@@ -1,11 +1,18 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.Data;
+using System.Data.SqlClient;
 using System.Globalization;
 using System.Linq;
 using Datory.Tests.Mocks;
-using Datory.Utils;
 using SqlKata;
 using Xunit;
 using Xunit.Abstractions;
+using Datory;
+using Datory.Utils;
+using MySql.Data.MySqlClient;
+using Npgsql;
+using Oracle.ManagedDataAccess.Client;
 
 namespace Datory.Tests.Core
 {
@@ -14,13 +21,40 @@ namespace Datory.Tests.Core
     {
         public EnvironmentFixture Fixture { get; }
         private readonly ITestOutputHelper _output;
+        private readonly Database _database;
         private readonly Repository<TestTableInfo> _repository;
+
+        public static IDbConnection GetConnection(DatabaseType databaseType, string connectionString)
+        {
+            IDbConnection conn = null;
+
+            if (databaseType == DatabaseType.MySql)
+            {
+                conn = new MySqlConnection(connectionString);
+            }
+            else if (databaseType == DatabaseType.SqlServer)
+            {
+                conn = new SqlConnection(connectionString);
+            }
+            else if (databaseType == DatabaseType.PostgreSql)
+            {
+                conn = new NpgsqlConnection(connectionString);
+            }
+            else if (databaseType == DatabaseType.Oracle)
+            {
+                conn = new OracleConnection(connectionString);
+            }
+
+            return conn;
+        }
 
         public GenericRepositoryTest(EnvironmentFixture fixture, ITestOutputHelper output)
         {
             Fixture = fixture;
             _output = output;
-            _repository = new Repository<TestTableInfo>(EnvUtils.DatabaseType, EnvUtils.ConnectionString);
+            _database = new Database(EnvUtils.DatabaseType, EnvUtils.ConnectionString,
+                GetConnection(EnvUtils.DatabaseType, EnvUtils.ConnectionString));
+            _repository = new Repository<TestTableInfo>(_database);
         }
 
         [SkippableFact, TestPriority(0)]
@@ -55,13 +89,13 @@ namespace Datory.Tests.Core
             var lockedColumn = tableColumns.FirstOrDefault(x => x.AttributeName == nameof(TestTableInfo.Locked));
             Assert.Null(lockedColumn);
 
-            var isExists = DatoryUtils.IsTableExists(EnvUtils.DatabaseType, EnvUtils.ConnectionString, tableName);
+            var isExists = DatoryUtils.IsTableExists(_database, tableName);
             if (isExists)
             {
-                DatoryUtils.DropTable(EnvUtils.DatabaseType, EnvUtils.ConnectionString, tableName);
+                DatoryUtils.DropTable(_database, tableName);
             }
 
-            DatoryUtils.CreateTable(EnvUtils.DatabaseType, EnvUtils.ConnectionString, tableName, tableColumns);
+            DatoryUtils.CreateTable(_database, tableName, tableColumns);
         }
 
         [SkippableFact, TestPriority(1)]
@@ -416,7 +450,7 @@ namespace Datory.Tests.Core
         {
             Skip.IfNot(EnvUtils.IntegrationTestMachine);
 
-            DatoryUtils.DropTable(EnvUtils.DatabaseType, EnvUtils.ConnectionString, _repository.TableName);
+            DatoryUtils.DropTable(_database, _repository.TableName);
         }
     }
 }

@@ -16,7 +16,7 @@ namespace Datory.Utils
             return query != null ? query.Clone().From(tableName) : new Query(tableName);
         }
 
-        private static (string sql, Dictionary<string, object> namedBindings) Compile(DatabaseType databaseType, string connectionString, string tableName, Query query)
+        private static (string sql, Dictionary<string, object> namedBindings) Compile(Database database, string tableName, Query query)
         {
             var method = query.Method;
             if (method == "update")
@@ -27,7 +27,7 @@ namespace Datory.Utils
             string sql;
             Dictionary<string, object> namedBindings;
 
-            var compiler = SqlUtils.GetCompiler(databaseType, connectionString);
+            var compiler = SqlUtils.GetCompiler(database);
             var compiled = compiler.Compile(query);
 
             if (method == "update")
@@ -97,7 +97,7 @@ namespace Datory.Utils
             return (sql, namedBindings);
         }
 
-        public static void SyncAndCheckGuid(DatabaseType databaseType, string connectionString, string tableName, Entity dataInfo)
+        public static void SyncAndCheckGuid(Database database, string tableName, Entity dataInfo)
         {
             if (dataInfo == null || dataInfo.Id <= 0) return;
 
@@ -111,35 +111,35 @@ namespace Datory.Utils
             dataInfo.Guid = ConvertUtils.GetGuid();
             dataInfo.LastModifiedDate = DateTime.Now;
 
-            UpdateAll(databaseType, connectionString, tableName, new Query()
+            UpdateAll(database, tableName, new Query()
                 .Set(nameof(Entity.Guid), dataInfo.Guid)
                 .Where(nameof(Entity.Id), dataInfo.Id)
             );
         }
 
-        public static bool Exists(DatabaseType databaseType, string connectionString, string tableName, Query query = null)
+        public static bool Exists(Database database, string tableName, Query query = null)
         {
             bool exists;
             var xQuery = NewQuery(tableName, query);
             xQuery.ClearComponent("select").SelectRaw("COUNT(1)").ClearComponent("order");
-            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
-            using (var connection = DatoryUtils.GetConnection(databaseType, connectionString))
+            var (sql, bindings) = Compile(database, tableName, xQuery);
+            using (database.Connection)
             {
-                exists = connection.ExecuteScalar<bool>(sql, bindings);
+                exists = database.Connection.ExecuteScalar<bool>(sql, bindings);
             }
 
             return exists;
         }
 
-        public static int Count(DatabaseType databaseType, string connectionString, string tableName, Query query = null)
+        public static int Count(Database database, string tableName, Query query = null)
         {
             int count;
             var xQuery = NewQuery(tableName, query);
             xQuery.ClearComponent("order").AsCount();
-            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
-            using (var connection = DatoryUtils.GetConnection(databaseType, connectionString))
+            var (sql, bindings) = Compile(database, tableName, xQuery);
+            using (database.Connection)
             {
-                count = connection.ExecuteScalar<int>(sql, bindings);
+                count = database.Connection.ExecuteScalar<int>(sql, bindings);
             }
 
             return count;
@@ -163,7 +163,7 @@ namespace Datory.Utils
             return column;
         }
 
-        public static int Sum(DatabaseType databaseType, string connectionString, string tableName, Query query = null)
+        public static int Sum(Database database, string tableName, Query query = null)
         {
             int count;
             var xQuery = NewQuery(tableName, query);
@@ -172,16 +172,16 @@ namespace Datory.Utils
             if (string.IsNullOrEmpty(columnName)) throw new ArgumentNullException(nameof(query.Select));
 
             xQuery.AsSum(columnName);
-            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
-            using (var connection = DatoryUtils.GetConnection(databaseType, connectionString))
+            var (sql, bindings) = Compile(database, tableName, xQuery);
+            using (database.Connection)
             {
-                count = connection.ExecuteScalar<int>(sql, bindings);
+                count = database.Connection.ExecuteScalar<int>(sql, bindings);
             }
 
             return count;
         }
 
-        public static TValue GetValue<TValue>(DatabaseType databaseType, string connectionString, string tableName, Query query)
+        public static TValue GetValue<TValue>(Database database, string tableName, Query query)
         {
             if (query == null) return default(TValue);
 
@@ -189,30 +189,30 @@ namespace Datory.Utils
 
             var xQuery = NewQuery(tableName, query);
             xQuery.Limit(1);
-            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
-            using (var connection = DatoryUtils.GetConnection(databaseType, connectionString))
+            var (sql, bindings) = Compile(database, tableName, xQuery);
+            using (database.Connection)
             {
-                value = connection.QueryFirstOrDefault<TValue>(sql, bindings);
+                value = database.Connection.QueryFirstOrDefault<TValue>(sql, bindings);
             }
 
             return value;
         }
 
-        public static IList<TValue> GetValueList<TValue>(DatabaseType databaseType, string connectionString, string tableName, Query query = null)
+        public static IList<TValue> GetValueList<TValue>(Database database, string tableName, Query query = null)
         {
             IList<TValue> values;
 
             var xQuery = NewQuery(tableName, query);
-            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
-            using (var connection = DatoryUtils.GetConnection(databaseType, connectionString))
+            var (sql, bindings) = Compile(database, tableName, xQuery);
+            using (database.Connection)
             {
-                values = connection.Query<TValue>(sql, bindings).ToList();
+                values = database.Connection.Query<TValue>(sql, bindings).ToList();
             }
 
             return values;
         }
 
-        public static int? Max(DatabaseType databaseType, string connectionString, string tableName, Query query = null)
+        public static int? Max(Database database, string tableName, Query query = null)
         {
             int? value;
 
@@ -222,49 +222,49 @@ namespace Datory.Utils
             if (string.IsNullOrEmpty(columnName)) throw new ArgumentNullException($"{nameof(Query)}.{nameof(Query.Select)}");
 
             xQuery.AsMax(columnName);
-            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
-            using (var connection = DatoryUtils.GetConnection(databaseType, connectionString))
+            var (sql, bindings) = Compile(database, tableName, xQuery);
+            using (database.Connection)
             {
-                value = connection.QueryFirstOrDefault<int?>(sql, bindings);
+                value = database.Connection.QueryFirstOrDefault<int?>(sql, bindings);
             }
 
             return value;
         }
 
-        public static T GetObject<T>(DatabaseType databaseType, string connectionString, string tableName, Query query = null) where T : Entity
+        public static T GetObject<T>(Database database, string tableName, Query query = null) where T : Entity
         {
             T value;
             var xQuery = NewQuery(tableName, query);
             xQuery.ClearComponent("select").SelectRaw("*").Limit(1);
-            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
-            using (var connection = DatoryUtils.GetConnection(databaseType, connectionString))
+            var (sql, bindings) = Compile(database, tableName, xQuery);
+            using (database.Connection)
             {
-                value = connection.QueryFirstOrDefault<T>(sql, bindings);
+                value = database.Connection.QueryFirstOrDefault<T>(sql, bindings);
             }
 
-            SyncAndCheckGuid(databaseType, connectionString, tableName, value);
+            SyncAndCheckGuid(database, tableName, value);
 
             return value;
         }
 
-        public static IList<T> GetObjectList<T>(DatabaseType databaseType, string connectionString, string tableName, Query query = null) where T : Entity
+        public static IList<T> GetObjectList<T>(Database database, string tableName, Query query = null) where T : Entity
         {
             IList<T> values;
             var xQuery = NewQuery(tableName, query);
             xQuery.ClearComponent("select").SelectRaw("*");
-            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
-            using (var connection = DatoryUtils.GetConnection(databaseType, connectionString))
+            var (sql, bindings) = Compile(database, tableName, xQuery);
+            using (database.Connection)
             {
-                values = connection.Query<T>(sql, bindings).ToList();
+                values = database.Connection.Query<T>(sql, bindings).ToList();
             }
             foreach (var dataInfo in values)
             {
-                SyncAndCheckGuid(databaseType, connectionString, tableName, dataInfo);
+                SyncAndCheckGuid(database, tableName, dataInfo);
             }
             return values;
         }
 
-        public static int InsertObject<T>(DatabaseType databaseType, string connectionString, string tableName, IEnumerable<TableColumn> tableColumns, T dataInfo) where T : Entity
+        public static int InsertObject<T>(Database database, string tableName, IEnumerable<TableColumn> tableColumns, T dataInfo) where T : Entity
         {
             if (dataInfo == null) return 0;
             dataInfo.Guid = ConvertUtils.GetGuid();
@@ -290,47 +290,47 @@ namespace Datory.Utils
 
             var xQuery = NewQuery(tableName);
             xQuery.AsInsert(dictionary, true);
-            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
-            using (var connection = DatoryUtils.GetConnection(databaseType, connectionString))
+            var (sql, bindings) = Compile(database, tableName, xQuery);
+            using (database.Connection)
             {
-                dataInfo.Id = connection.QueryFirst<int>(sql, bindings);
+                dataInfo.Id = database.Connection.QueryFirst<int>(sql, bindings);
             }
 
             return dataInfo.Id;
         }
 
-        public static int DeleteAll(DatabaseType databaseType, string connectionString, string tableName, Query query = null)
+        public static int DeleteAll(Database database, string tableName, Query query = null)
         {
             int affected;
             var xQuery = NewQuery(tableName, query);
             xQuery.AsDelete();
 
-            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
-            using (var connection = DatoryUtils.GetConnection(databaseType, connectionString))
+            var (sql, bindings) = Compile(database, tableName, xQuery);
+            using (database.Connection)
             {
-                affected = connection.Execute(sql, bindings);
+                affected = database.Connection.Execute(sql, bindings);
             }
 
             return affected;
         }
 
-        public static int UpdateAll(DatabaseType databaseType, string connectionString, string tableName, Query query)
+        public static int UpdateAll(Database database, string tableName, Query query)
         {
             int affected;
             var xQuery = NewQuery(tableName, query);
 
             xQuery.Method = "update";
 
-            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
-            using (var connection = DatoryUtils.GetConnection(databaseType, connectionString))
+            var (sql, bindings) = Compile(database, tableName, xQuery);
+            using (database.Connection)
             {
-                affected = connection.Execute(sql, bindings);
+                affected = database.Connection.Execute(sql, bindings);
             }
 
             return affected;
         }
 
-        public static int IncrementAll(DatabaseType databaseType, string connectionString, string tableName, Query query, int num = 1)
+        public static int IncrementAll(Database database, string tableName, Query query, int num = 1)
         {
             
 
@@ -360,12 +360,12 @@ namespace Datory.Utils
 
             xQuery
                 .ClearComponent("update")
-                .SetRaw($"{columnName} = {SqlUtils.ColumnIncrement(databaseType, columnName, num)}");
+                .SetRaw($"{columnName} = {SqlUtils.ColumnIncrement(database.DatabaseType, columnName, num)}");
 
-            return UpdateAll(databaseType, connectionString, tableName, xQuery);
+            return UpdateAll(database, tableName, xQuery);
         }
 
-        public static int DecrementAll(DatabaseType databaseType, string connectionString, string tableName, Query query, int num = 1)
+        public static int DecrementAll(Database database, string tableName, Query query, int num = 1)
         {
             //int affected;
             //var sql =
@@ -390,16 +390,16 @@ namespace Datory.Utils
 
             xQuery
                 .ClearComponent("update")
-                .SetRaw($"{columnName} = {SqlUtils.ColumnDecrement(databaseType, columnName, num)}");
+                .SetRaw($"{columnName} = {SqlUtils.ColumnDecrement(database.DatabaseType, columnName, num)}");
 
-            return UpdateAll(databaseType, connectionString, tableName, xQuery);
+            return UpdateAll(database, tableName, xQuery);
         }
 
-        //public static int Execute(DatabaseType databaseType, string connectionString, string sql, object param = null)
+        //public static int Execute(Database database, string sql, object param = null)
         //{
         //    int affected;
             
-        //    using (var connection = DatoryUtils.GetConnection(databaseType, connectionString))
+        //    using (database.Connection)
         //    {
         //        affected = connection.Execute(sql, param);
         //    }
@@ -407,7 +407,7 @@ namespace Datory.Utils
         //    return affected;
         //}
 
-        //public static IDbConnection GetConnection(DatabaseType databaseType, string connectionString)
+        //public static IDbConnection GetConnection(Database database)
         //{
         //    return DatorySql.GetIDbConnection(databaseType, connectionString);
         //}
@@ -431,7 +431,7 @@ namespace Datory.Utils
         //    return (sql, bindings);
         //}
 
-        //public static bool UpdateObject<T>(DatabaseType databaseType, string connectionString, string tableName, List<TableColumn> tableColumns, T dataInfo) where T : Entity
+        //public static bool UpdateObject<T>(Database database, string tableName, List<TableColumn> tableColumns, T dataInfo) where T : Entity
         //{
         //    if (dataInfo == null || dataInfo.Id <= 0) return false;
         //    if (!ConvertUtils.IsGuid(dataInfo.Guid))
@@ -459,7 +459,7 @@ namespace Datory.Utils
         //    var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
 
         //    int affected;
-        //    using (var connection = DatoryUtils.GetConnection(databaseType, connectionString))
+        //    using (database.Connection)
         //    {
         //        affected = connection.Execute(sql, bindings);
         //    }

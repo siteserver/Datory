@@ -18,11 +18,11 @@ namespace Datory
 
         public virtual T Get<T>(Query query = null)
         {
-            var value = RepositoryUtils.GetValue<T>(DatabaseType, ConnectionString, TableName, query);
+            var value = RepositoryUtils.GetValue<T>(Database, TableName, query);
 
             if (typeof(T).IsAssignableFrom(typeof(Entity)))
             {
-                RepositoryUtils.SyncAndCheckGuid(DatabaseType, ConnectionString, TableName, value as Entity);
+                RepositoryUtils.SyncAndCheckGuid(Database, TableName, value as Entity);
             }
 
             return value;
@@ -30,13 +30,13 @@ namespace Datory
 
         public virtual IList<T> GetAll<T>(Query query = null)
         {
-            var list = RepositoryUtils.GetValueList<T>(DatabaseType, ConnectionString, TableName, query);
+            var list = RepositoryUtils.GetValueList<T>(Database, TableName, query);
 
             if (typeof(T).IsAssignableFrom(typeof(Entity)))
             {
                 foreach (var value in list)
                 {
-                    RepositoryUtils.SyncAndCheckGuid(DatabaseType, ConnectionString, TableName, value as Entity);
+                    RepositoryUtils.SyncAndCheckGuid(Database, TableName, value as Entity);
                 }
             }
 
@@ -55,22 +55,22 @@ namespace Datory
 
         public virtual bool Exists(Query query = null)
         {
-            return RepositoryUtils.Exists(DatabaseType, ConnectionString, TableName, query);
+            return RepositoryUtils.Exists(Database, TableName, query);
         }
 
         public virtual int Count(Query query = null)
         {
-            return RepositoryUtils.Count(DatabaseType, ConnectionString, TableName, query);
+            return RepositoryUtils.Count(Database, TableName, query);
         }
 
         public virtual int Sum(Query query = null)
         {
-            return RepositoryUtils.Sum(DatabaseType, ConnectionString, TableName, query);
+            return RepositoryUtils.Sum(Database, TableName, query);
         }
 
         public virtual int? Max(Query query = null)
         {
-            return RepositoryUtils.Max(DatabaseType, ConnectionString, TableName, query);
+            return RepositoryUtils.Max(Database, TableName, query);
         }
     }
 }

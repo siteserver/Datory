@@ -35,7 +35,7 @@ namespace Datory
             //    query.Set(value.Key, value.Value);
             //}
 
-            return RepositoryUtils.UpdateAll(DatabaseType, ConnectionString, TableName, query) > 0;
+            return RepositoryUtils.UpdateAll(Database, TableName, query) > 0;
 
             //using (var connection = GetConnection())
             //{
@@ -62,7 +62,7 @@ namespace Datory
                 //{
                 //    query.Set(value.Key, value.Value);
                 //}
-                return RepositoryUtils.UpdateAll(DatabaseType, ConnectionString, TableName, query) > 0;
+                return RepositoryUtils.UpdateAll(Database, TableName, query) > 0;
             }
             if (ConvertUtils.IsGuid(dataInfo.Guid))
             {
@@ -81,7 +81,7 @@ namespace Datory
                 //    query.Set(value.Key, value.Value);
                 //}
 
-                return RepositoryUtils.UpdateAll(DatabaseType, ConnectionString, TableName, query) > 0;
+                return RepositoryUtils.UpdateAll(Database, TableName, query) > 0;
             }
 
             return false;
@@ -89,17 +89,17 @@ namespace Datory
 
         public virtual int Update(Query query)
         {
-            return RepositoryUtils.UpdateAll(DatabaseType, ConnectionString, TableName, query);
+            return RepositoryUtils.UpdateAll(Database, TableName, query);
         }
 
         public virtual int Increment(Query query, int num = 1)
         {
-            return RepositoryUtils.IncrementAll(DatabaseType, ConnectionString, TableName, query, num);
+            return RepositoryUtils.IncrementAll(Database, TableName, query, num);
         }
 
         public virtual int Decrement(Query query, int num = 1)
         {
-            return RepositoryUtils.DecrementAll(DatabaseType, ConnectionString, TableName, query, num);
+            return RepositoryUtils.DecrementAll(Database, TableName, query, num);
         }
     }
 }
