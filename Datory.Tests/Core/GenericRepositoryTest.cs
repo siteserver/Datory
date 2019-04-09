@@ -52,7 +52,7 @@ namespace Datory.Tests.Core
         {
             Fixture = fixture;
             _output = output;
-            _database = new Database(EnvUtils.DatabaseType, EnvUtils.ConnectionString,
+            _database = new Database(EnvUtils.DatabaseType,
                 GetConnection(EnvUtils.DatabaseType, EnvUtils.ConnectionString));
             _repository = new Repository<TestTableInfo>(_database);
         }
