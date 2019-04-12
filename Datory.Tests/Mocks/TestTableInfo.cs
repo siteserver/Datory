@@ -7,10 +7,13 @@ namespace Datory.Tests.Mocks
     public class TestTableInfo : Entity
     {
         [TableColumn(Length = 100)]
-        public string VarChar100 { get; set; }
+        public string TypeVarChar100 { get; set; }
 
-        [TableColumn(Length = 100)]
-        public string VarCharDefault { get; set; }
+        [TableColumn]
+        public string TypeVarCharDefault { get; set; }
+
+        [TableColumn]
+        public bool TypeBool { get; set; }
 
         [TableColumn(Text = true)]
         public string Content { get; set; }
@@ -29,7 +32,7 @@ namespace Datory.Tests.Mocks
 
         public bool Locked
         {
-            get => ConvertUtils.ToBool(IsLockedOut);
+            get => Utilities.ToBool(IsLockedOut);
             set => IsLockedOut = value.ToString();
         }
     }

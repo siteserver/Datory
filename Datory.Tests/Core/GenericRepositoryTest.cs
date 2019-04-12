@@ -67,17 +67,21 @@ namespace Datory.Tests.Core
 
             Assert.Equal("TestTable", tableName);
             Assert.NotNull(tableColumns);
-            Assert.Equal(10, tableColumns.Count);
+            Assert.Equal(11, tableColumns.Count);
 
-            var varChar100Column = tableColumns.FirstOrDefault(x => x.AttributeName == nameof(TestTableInfo.VarChar100));
+            var varChar100Column = tableColumns.FirstOrDefault(x => x.AttributeName == nameof(TestTableInfo.TypeVarChar100));
             Assert.NotNull(varChar100Column);
             Assert.Equal(DataType.VarChar, varChar100Column.DataType);
             Assert.Equal(100, varChar100Column.DataLength);
 
-            var varCharDefaultColumn = tableColumns.FirstOrDefault(x => x.AttributeName == nameof(TestTableInfo.VarCharDefault));
+            var varCharDefaultColumn = tableColumns.FirstOrDefault(x => x.AttributeName == nameof(TestTableInfo.TypeVarCharDefault));
             Assert.NotNull(varCharDefaultColumn);
             Assert.Equal(DataType.VarChar, varCharDefaultColumn.DataType);
-            Assert.Equal(100, varCharDefaultColumn.DataLength);
+            Assert.Equal(DatoryUtils.VarCharDefaultLength, varCharDefaultColumn.DataLength);
+
+            var boolColumn = tableColumns.FirstOrDefault(x => x.AttributeName == nameof(TestTableInfo.TypeBool));
+            Assert.NotNull(boolColumn);
+            Assert.Equal(DataType.Boolean, boolColumn.DataType);
 
             var contentColumn = tableColumns.FirstOrDefault(x => x.AttributeName == nameof(TestTableInfo.Content));
             Assert.NotNull(contentColumn);
@@ -109,10 +113,10 @@ namespace Datory.Tests.Core
             var dataInfo = new TestTableInfo();
             _repository.Insert(dataInfo);
             Assert.Equal(1, dataInfo.Id);
-            Assert.True(ConvertUtils.IsGuid(dataInfo.Guid));
+            Assert.True(Utilities.IsGuid(dataInfo.Guid));
             Assert.True(dataInfo.LastModifiedDate.HasValue);
-            Assert.Null(dataInfo.VarChar100);
-            Assert.Null(dataInfo.VarCharDefault);
+            Assert.Null(dataInfo.TypeVarChar100);
+            Assert.Null(dataInfo.TypeVarCharDefault);
             Assert.Null(dataInfo.Content);
             Assert.Equal(0, dataInfo.Num);
             Assert.Equal(0, dataInfo.Currency);
@@ -123,17 +127,17 @@ namespace Datory.Tests.Core
             dataInfo = new TestTableInfo
             {
                 Guid = "wrong guid",
-                VarChar100 = "string",
+                TypeVarChar100 = "string",
                 Num = -100,
                 Date = DateTime.Now,
                 Locked = true
             };
             _repository.Insert(dataInfo);
             Assert.Equal(2, dataInfo.Id);
-            Assert.True(ConvertUtils.IsGuid(dataInfo.Guid));
+            Assert.True(Utilities.IsGuid(dataInfo.Guid));
             Assert.True(dataInfo.LastModifiedDate.HasValue);
-            Assert.Equal("string", dataInfo.VarChar100);
-            Assert.Null(dataInfo.VarCharDefault);
+            Assert.Equal("string", dataInfo.TypeVarChar100);
+            Assert.Null(dataInfo.TypeVarCharDefault);
             Assert.Null(dataInfo.Content);
             Assert.Equal(-100, dataInfo.Num);
             Assert.Equal(0, dataInfo.Currency);
@@ -152,10 +156,10 @@ namespace Datory.Tests.Core
             var dataInfo = _repository.Get(1);
             Assert.NotNull(dataInfo);
             Assert.Equal(1, dataInfo.Id);
-            Assert.True(ConvertUtils.IsGuid(dataInfo.Guid));
+            Assert.True(Utilities.IsGuid(dataInfo.Guid));
             Assert.True(dataInfo.LastModifiedDate.HasValue);
-            Assert.Null(dataInfo.VarChar100);
-            Assert.Null(dataInfo.VarCharDefault);
+            Assert.Null(dataInfo.TypeVarChar100);
+            Assert.Null(dataInfo.TypeVarCharDefault);
             Assert.Null(dataInfo.Content);
             Assert.Equal(0, dataInfo.Num);
             Assert.Equal(0, dataInfo.Currency);
@@ -168,10 +172,10 @@ namespace Datory.Tests.Core
             dataInfo = _repository.Get(2);
             Assert.NotNull(dataInfo);
             Assert.Equal(2, dataInfo.Id);
-            Assert.True(ConvertUtils.IsGuid(dataInfo.Guid));
+            Assert.True(Utilities.IsGuid(dataInfo.Guid));
             Assert.True(dataInfo.LastModifiedDate.HasValue);
-            Assert.Equal("string", dataInfo.VarChar100);
-            Assert.Null(dataInfo.VarCharDefault);
+            Assert.Equal("string", dataInfo.TypeVarChar100);
+            Assert.Null(dataInfo.TypeVarCharDefault);
             Assert.Null(dataInfo.Content);
             Assert.Equal(-100, dataInfo.Num);
             Assert.Equal(0, dataInfo.Currency);
@@ -183,13 +187,13 @@ namespace Datory.Tests.Core
         {
             Skip.IfNot(EnvUtils.IntegrationTestMachine);
 
-            var dataInfo = _repository.Get(new Query().Where(Attr.VarChar100, "string"));
+            var dataInfo = _repository.Get(new Query().Where(Attr.TypeVarChar100, "string"));
             Assert.NotNull(dataInfo);
             Assert.Equal(2, dataInfo.Id);
-            Assert.True(ConvertUtils.IsGuid(dataInfo.Guid));
+            Assert.True(Utilities.IsGuid(dataInfo.Guid));
             Assert.True(dataInfo.LastModifiedDate.HasValue);
-            Assert.Equal("string", dataInfo.VarChar100);
-            Assert.Null(dataInfo.VarCharDefault);
+            Assert.Equal("string", dataInfo.TypeVarChar100);
+            Assert.Null(dataInfo.TypeVarCharDefault);
             Assert.Null(dataInfo.Content);
             Assert.Equal(-100, dataInfo.Num);
             Assert.Equal(0, dataInfo.Currency);
@@ -198,10 +202,10 @@ namespace Datory.Tests.Core
             dataInfo = _repository.Get(dataInfo.Guid);
             Assert.NotNull(dataInfo);
             Assert.Equal(2, dataInfo.Id);
-            Assert.True(ConvertUtils.IsGuid(dataInfo.Guid));
+            Assert.True(Utilities.IsGuid(dataInfo.Guid));
             Assert.True(dataInfo.LastModifiedDate.HasValue);
-            Assert.Equal("string", dataInfo.VarChar100);
-            Assert.Null(dataInfo.VarCharDefault);
+            Assert.Equal("string", dataInfo.TypeVarChar100);
+            Assert.Null(dataInfo.TypeVarCharDefault);
             Assert.Null(dataInfo.Content);
             Assert.Equal(-100, dataInfo.Num);
             Assert.Equal(0, dataInfo.Currency);
@@ -210,16 +214,16 @@ namespace Datory.Tests.Core
             dataInfo = _repository.Get(dataInfo.Guid);
             Assert.NotNull(dataInfo);
             Assert.Equal(2, dataInfo.Id);
-            Assert.True(ConvertUtils.IsGuid(dataInfo.Guid));
+            Assert.True(Utilities.IsGuid(dataInfo.Guid));
             Assert.True(dataInfo.LastModifiedDate.HasValue);
-            Assert.Equal("string", dataInfo.VarChar100);
-            Assert.Null(dataInfo.VarCharDefault);
+            Assert.Equal("string", dataInfo.TypeVarChar100);
+            Assert.Null(dataInfo.TypeVarCharDefault);
             Assert.Null(dataInfo.Content);
             Assert.Equal(-100, dataInfo.Num);
             Assert.Equal(0, dataInfo.Currency);
             Assert.True(dataInfo.Date.HasValue);
 
-            dataInfo = _repository.Get(new Query().Where(Attr.VarChar100, "not exists"));
+            dataInfo = _repository.Get(new Query().Where(Attr.TypeVarChar100, "not exists"));
             Assert.Null(dataInfo);
 
             dataInfo = _repository.Get(new Query());
@@ -232,10 +236,10 @@ namespace Datory.Tests.Core
             Skip.IfNot(EnvUtils.IntegrationTestMachine);
 
             var exists = _repository.Exists(new Query()
-                .Where(nameof(TestTableInfo.VarChar100), "string"));
+                .Where(nameof(TestTableInfo.TypeVarChar100), "string"));
             Assert.True(exists);
 
-            exists = _repository.Exists(new Query().Where(nameof(TestTableInfo.VarChar100), "not exists"));
+            exists = _repository.Exists(new Query().Where(nameof(TestTableInfo.TypeVarChar100), "not exists"));
             Assert.False(exists);
 
             exists = _repository.Exists(new Query());
@@ -261,7 +265,7 @@ namespace Datory.Tests.Core
 
             var guid = _repository.Get<string>(new Query()
                 .Select(nameof(Entity.Guid)).Where("Id", 1));
-            Assert.True(ConvertUtils.IsGuid(guid));
+            Assert.True(Utilities.IsGuid(guid));
 
             var date = _repository.Get<DateTime?>(new Query()
                 .Select(nameof(TestTableInfo.Date)).Where("Guid", guid));
@@ -284,7 +288,7 @@ namespace Datory.Tests.Core
                 .Where("Id", 1)).ToList();
 
             Assert.NotNull(guidList);
-            Assert.True(ConvertUtils.IsGuid(guidList.First()));
+            Assert.True(Utilities.IsGuid(guidList.First()));
 
             var dateList = _repository.GetAll<DateTime?>(new Query()
                 .Select(nameof(TestTableInfo.Date))
@@ -327,10 +331,10 @@ namespace Datory.Tests.Core
             Assert.True(updated);
 
             Assert.Equal(1, dataInfo.Id);
-            Assert.True(ConvertUtils.IsGuid(dataInfo.Guid));
+            Assert.True(Utilities.IsGuid(dataInfo.Guid));
             Assert.True(dataInfo.LastModifiedDate.HasValue);
-            Assert.Null(dataInfo.VarChar100);
-            Assert.Null(dataInfo.VarCharDefault);
+            Assert.Null(dataInfo.TypeVarChar100);
+            Assert.Null(dataInfo.TypeVarCharDefault);
             Assert.Equal("new content", dataInfo.Content);
             Assert.Equal(0, dataInfo.Num);
             Assert.Equal(0, dataInfo.Currency);
@@ -366,10 +370,10 @@ namespace Datory.Tests.Core
             var lastModified2 = dataInfo.LastModifiedDate.Value.Ticks;
 
             Assert.Equal(1, dataInfo.Id);
-            Assert.True(ConvertUtils.IsGuid(dataInfo.Guid));
+            Assert.True(Utilities.IsGuid(dataInfo.Guid));
             Assert.True(dataInfo.LastModifiedDate.HasValue);
-            Assert.Null(dataInfo.VarChar100);
-            Assert.Null(dataInfo.VarCharDefault);
+            Assert.Null(dataInfo.TypeVarChar100);
+            Assert.Null(dataInfo.TypeVarCharDefault);
             Assert.Equal("new content2", dataInfo.Content);
             Assert.Equal(0, dataInfo.Num);
             Assert.Equal(0, dataInfo.Currency);

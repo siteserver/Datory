@@ -105,7 +105,7 @@ namespace Datory
 
         public void Sync(string json)
         {
-            var dict = ConvertUtils.ToDictionary(json);
+            var dict = Utilities.ToDictionary(json);
             Sync(dict);
         }
 
@@ -197,12 +197,12 @@ namespace Datory
 
             return ContainsIgnoreCase(_propertyNames, name, out var realName)
                 ? ReflectionUtils.GetValue(this, realName)
-                : ConvertUtils.Get(_extendDictionary, name);
+                : Utilities.Get(_extendDictionary, name);
         }
 
         public T Get<T>(string name, T defaultValue = default(T))
         {
-            return ConvertUtils.Get(Get(name), defaultValue);
+            return Utilities.Get(Get(name), defaultValue);
         }
 
         public override bool TryGetMember(GetMemberBinder binder, out object result)

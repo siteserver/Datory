@@ -28,12 +28,9 @@ namespace Datory
 
                 try
                 {
-                    //using (database.Connection)
-                    //{
-                        var version = database.Connection.ExecuteScalar<string>(sqlString);
+                    var version = database.Connection.ExecuteScalar<string>(sqlString);
 
-                        useLegacyPagination = ConvertUtils.ToDecimal(version) < 11;
-                    //}
+                    useLegacyPagination = Utilities.ToDecimal(version) < 11;
                 }
                 catch
                 {
@@ -64,34 +61,24 @@ namespace Datory
                 // ANSI SQL way.  Works in PostgreSQL, MSSQL, MySQL.  
                 if (database.DatabaseType != DatabaseType.Oracle)
                 {
-                    //using (database.Connection)
-                    //{
-                        var sql = $"select case when exists((select * from information_schema.tables where table_name = '{tableName}')) then 1 else 0 end";
+                    var sql = $"select case when exists((select * from information_schema.tables where table_name = '{tableName}')) then 1 else 0 end";
 
-                        exists = database.Connection.ExecuteScalar<int>(sql) == 1;
-                    //}
+                    exists = database.Connection.ExecuteScalar<int>(sql) == 1;
                 }
                 else
                 {
-                    //using (database.Connection)
-                    //{
-                        var sql = $"SELECT COUNT(*) FROM ALL_OBJECTS WHERE OBJECT_TYPE = 'TABLE' AND OWNER = '{SqlUtils.GetConnectionStringUserId(database.ConnectionString).ToUpper()}' and OBJECT_NAME = '{tableName}'";
+                    var sql = $"SELECT COUNT(*) FROM ALL_OBJECTS WHERE OBJECT_TYPE = 'TABLE' AND OWNER = '{SqlUtils.GetConnectionStringUserId(database.ConnectionString).ToUpper()}' and OBJECT_NAME = '{tableName}'";
 
-                        exists = database.Connection.ExecuteScalar<int>(sql) == 1;
-                    //}
+                    exists = database.Connection.ExecuteScalar<int>(sql) == 1;
                 }
             }
             catch
             {
                 try
                 {
-                    // Other DB.  Graceful degradation
-                    //using (database.Connection)
-                    //{
-                        var sql = $"select 1 from {tableName} where 1 = 0";
+                    var sql = $"select 1 from {tableName} where 1 = 0";
 
-                        exists = database.Connection.ExecuteScalar<int>(sql) == 1;
-                    //}
+                    exists = database.Connection.ExecuteScalar<int>(sql) == 1;
                 }
                 catch
                 {
@@ -107,7 +94,7 @@ namespace Datory
             var identityColumnName = string.Empty;
             foreach (var column in columns)
             {
-                if (column.IsIdentity || ConvertUtils.EqualsIgnoreCase(column.AttributeName, "id"))
+                if (column.IsIdentity || Utilities.EqualsIgnoreCase(column.AttributeName, "id"))
                 {
                     identityColumnName = column.AttributeName;
                     break;
@@ -120,10 +107,7 @@ namespace Datory
                 var sqlString =
                     SqlUtils.GetAddColumnsSqlString(database.DatabaseType, tableName, $"{identityColumnName} {SqlUtils.GetAutoIncrementDataType(database.DatabaseType, true)}");
 
-                //using (database.Connection)
-                //{
-                    database.Connection.Execute(sqlString);
-                //}
+                database.Connection.Execute(sqlString);
 
                 columns.Insert(0, new TableColumn
                 {
@@ -137,14 +121,14 @@ namespace Datory
             return identityColumnName;
         }
 
-        public static void AlterTable(Database database, string tableName, IList<TableColumn> tableColumns, IList<string> dropColumnNames)
+        public static void AlterTable(Database database, string tableName, IList<TableColumn> tableColumns, IList<string> dropColumnNames = null)
         {
             var list = new List<string>();
 
             var columnNameList = GetColumnNames(database, tableName);
             foreach (var tableColumn in tableColumns)
             {
-                if (!ConvertUtils.ContainsIgnoreCase(columnNameList, tableColumn.AttributeName))
+                if (!Utilities.ContainsIgnoreCase(columnNameList, tableColumn.AttributeName))
                 {
                     list.Add(SqlUtils.GetAddColumnsSqlString(database.DatabaseType, tableName, SqlUtils.GetColumnSqlString(database.DatabaseType, tableColumn)));
                 }
@@ -154,7 +138,7 @@ namespace Datory
             {
                 foreach (var columnName in columnNameList)
                 {
-                    if (ConvertUtils.ContainsIgnoreCase(dropColumnNames, columnName))
+                    if (Utilities.ContainsIgnoreCase(dropColumnNames, columnName))
                     {
                         list.Add(SqlUtils.GetDropColumnsSqlString(database.DatabaseType, tableName, columnName));
                     }
@@ -163,38 +147,35 @@ namespace Datory
 
             if (list.Count <= 0) return;
 
-            //using (database.Connection)
-            //{
-                foreach (var sqlString in list)
-                {
-                    database.Connection.Execute(sqlString);
-                }
-            //}
+            foreach (var sqlString in list)
+            {
+                database.Connection.Execute(sqlString);
+            }
         }
 
         public static void CreateTable(Database database, string tableName, List<TableColumn> tableColumns)
         {
             var sqlBuilder = new StringBuilder();
 
-            sqlBuilder.Append($@"CREATE TABLE {tableName} (").AppendLine();
+            sqlBuilder.Append($@"CREATE TABLE {SqlUtils.GetQuotedIdentifier(database.DatabaseType, tableName)} (").AppendLine();
 
             var primaryKeyColumns = new List<TableColumn>();
             TableColumn identityColumn = null;
 
             foreach (var tableColumn in tableColumns)
             {
-                if (ConvertUtils.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.Id)))
+                if (Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.Id)))
                 {
                     tableColumn.DataType = DataType.Integer;
                     tableColumn.IsIdentity = true;
                     tableColumn.IsPrimaryKey = true;
                 }
-                else if (ConvertUtils.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.Guid)))
+                else if (Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.Guid)))
                 {
                     tableColumn.DataType = DataType.VarChar;
                     tableColumn.DataLength = 50;
                 }
-                else if (ConvertUtils.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.LastModifiedDate)))
+                else if (Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.LastModifiedDate)))
                 {
                     tableColumn.DataType = DataType.DateTime;
                 }
@@ -251,11 +232,8 @@ namespace Datory
             sqlBuilder.AppendLine().Append(database.DatabaseType == DatabaseType.MySql
                 ? ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
                 : ")");
-            
-            //using (database.Connection)
-            //{
-                database.Connection.Execute(sqlBuilder.ToString());
-            //}
+
+            database.Connection.Execute(sqlBuilder.ToString());
         }
 
         public static void CreateIndex(Database database, string tableName, string indexName, params string[] columns)
@@ -278,10 +256,7 @@ namespace Datory
             sqlString.Length--;
             sqlString.Append(")");
 
-            //using (database.Connection)
-            //{
-                database.Connection.Execute(sqlString.ToString());
-            //}
+            database.Connection.Execute(sqlString.ToString());
         }
 
         public static List<string> GetColumnNames(Database database, string tableName)
@@ -330,7 +305,7 @@ namespace Datory
             else if (database.DatabaseType == DatabaseType.SqlServer)
             {
                 sqlString =
-                    $"SELECT name FROM [{database.Owner}]..sysobjects WHERE type = 'U' AND category<>2 ORDER BY Name";
+                    "SELECT name FROM sysobjects WHERE type = 'U' AND category <> 2 ORDER BY Name";
             }
             else if (database.DatabaseType == DatabaseType.PostgreSql)
             {
@@ -344,44 +319,13 @@ namespace Datory
 
             if (string.IsNullOrEmpty(sqlString)) return new List<string>();
 
-            IEnumerable<string> tableNames;
-            //using (database.Connection)
-            //{
-                tableNames = database.Connection.Query<string>(sqlString);
-            //}
+            var tableNames = database.Connection.Query<string>(sqlString);
             return tableNames.Where(tableName => !string.IsNullOrEmpty(tableName)).ToList();
         }
 
         public static void DropTable(Database database, string tableName)
         {
-            //using (database.Connection)
-            //{
-                var sql = $"DROP TABLE {tableName}";
-
-                database.Connection.Execute(sql);
-            //}
+            database.Connection.Execute($"DROP TABLE {SqlUtils.GetQuotedIdentifier(database.DatabaseType, tableName)}");
         }
-
-        //public static bool DropTable(Database database, string tableName, out Exception ex)
-        //{
-        //    ex = null;
-        //    var isAltered = false;
-
-        //    try
-        //    {
-        //        using (database.Connection)
-        //        {
-        //            database.Connection.Execute($"DROP TABLE {tableName}");
-        //        }
-
-        //        isAltered = true;
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        ex = e;
-        //    }
-
-        //    return isAltered;
-        //}
     }
 }

@@ -13,7 +13,7 @@ namespace Datory
 
         public virtual T Get(string guid)
         {
-            return !ConvertUtils.IsGuid(guid) ? null : Get(Q.Where(nameof(Entity.Guid), guid));
+            return !Utilities.IsGuid(guid) ? null : Get(Q.Where(nameof(Entity.Guid), guid));
         }
 
         public virtual T Get(Query query = null)
@@ -43,7 +43,7 @@ namespace Datory
 
         public virtual bool Exists(string guid)
         {
-            return ConvertUtils.IsGuid(guid) && Exists(Q.Where(nameof(Entity.Guid), guid));
+            return Utilities.IsGuid(guid) && Exists(Q.Where(nameof(Entity.Guid), guid));
         }
 
         public virtual bool Exists(Query query = null)

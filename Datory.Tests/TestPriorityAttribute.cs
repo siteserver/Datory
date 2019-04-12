@@ -2,7 +2,7 @@
 
 namespace Datory.Tests
 {
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Method)]
     public class TestPriorityAttribute : Attribute
     {
         public TestPriorityAttribute(int priority)

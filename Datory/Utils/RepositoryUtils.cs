@@ -106,9 +106,9 @@ namespace Datory.Utils
                 dataInfo.Sync(dataInfo.Get<string>(dataInfo.GetExtendColumnName()));
             }
 
-            if (ConvertUtils.IsGuid(dataInfo.Guid)) return;
+            if (Utilities.IsGuid(dataInfo.Guid)) return;
 
-            dataInfo.Guid = ConvertUtils.GetGuid();
+            dataInfo.Guid = Utilities.GetGuid();
             dataInfo.LastModifiedDate = DateTime.Now;
 
             UpdateAll(database, tableName, new Query()
@@ -119,30 +119,20 @@ namespace Datory.Utils
 
         public static bool Exists(Database database, string tableName, Query query = null)
         {
-            bool exists;
             var xQuery = NewQuery(tableName, query);
             xQuery.ClearComponent("select").SelectRaw("COUNT(1)").ClearComponent("order");
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            //using (database.Connection)
-            //{
-                exists = database.Connection.ExecuteScalar<bool>(sql, bindings);
-            //}
 
-            return exists;
+            return database.Connection.ExecuteScalar<bool>(sql, bindings);
         }
 
         public static int Count(Database database, string tableName, Query query = null)
         {
-            int count;
             var xQuery = NewQuery(tableName, query);
             xQuery.ClearComponent("order").AsCount();
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            //using (database.Connection)
-            //{
-                count = database.Connection.ExecuteScalar<int>(sql, bindings);
-            //}
 
-            return count;
+            return database.Connection.ExecuteScalar<int>(sql, bindings);
         }
 
         private static string GetFirstSelectColumnName(Query query)
@@ -150,14 +140,13 @@ namespace Datory.Utils
             string column = null;
 
             var components = query?.GetComponents("select");
-            if (components != null)
+            if (components == null) return null;
+
+            foreach (var clause in components)
             {
-                foreach (var clause in components)
-                {
-                    if (!(clause is Column select)) continue;
-                    column = select.Name;
-                    break;
-                }
+                if (!(clause is Column select)) continue;
+                column = select.Name;
+                break;
             }
 
             return column;
@@ -165,7 +154,6 @@ namespace Datory.Utils
 
         public static int Sum(Database database, string tableName, Query query = null)
         {
-            int count;
             var xQuery = NewQuery(tableName, query);
 
             var columnName = GetFirstSelectColumnName(xQuery);
@@ -173,49 +161,31 @@ namespace Datory.Utils
 
             xQuery.AsSum(columnName);
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            //using (database.Connection)
-            //{
-                count = database.Connection.ExecuteScalar<int>(sql, bindings);
-            //}
 
-            return count;
+            return database.Connection.ExecuteScalar<int>(sql, bindings);
         }
 
         public static TValue GetValue<TValue>(Database database, string tableName, Query query)
         {
             if (query == null) return default(TValue);
 
-            TValue value;
-
             var xQuery = NewQuery(tableName, query);
             xQuery.Limit(1);
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            //using (database.Connection)
-            //{
-                value = database.Connection.QueryFirstOrDefault<TValue>(sql, bindings);
-            //}
 
-            return value;
+            return database.Connection.QueryFirstOrDefault<TValue>(sql, bindings);
         }
 
         public static IList<TValue> GetValueList<TValue>(Database database, string tableName, Query query = null)
         {
-            IList<TValue> values;
-
             var xQuery = NewQuery(tableName, query);
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            //using (database.Connection)
-            //{
-                values = database.Connection.Query<TValue>(sql, bindings).ToList();
-            //}
 
-            return values;
+            return database.Connection.Query<TValue>(sql, bindings).ToList();
         }
 
         public static int? Max(Database database, string tableName, Query query = null)
         {
-            int? value;
-
             var xQuery = NewQuery(tableName, query);
 
             var columnName = GetFirstSelectColumnName(xQuery);
@@ -223,40 +193,28 @@ namespace Datory.Utils
 
             xQuery.AsMax(columnName);
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            //using (database.Connection)
-            //{
-                value = database.Connection.QueryFirstOrDefault<int?>(sql, bindings);
-            //}
 
-            return value;
+            return database.Connection.QueryFirstOrDefault<int?>(sql, bindings);
         }
 
         public static T GetObject<T>(Database database, string tableName, Query query = null) where T : Entity
         {
-            T value;
             var xQuery = NewQuery(tableName, query);
             xQuery.ClearComponent("select").SelectRaw("*").Limit(1);
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            //using (database.Connection)
-            //{
-                value = database.Connection.QueryFirstOrDefault<T>(sql, bindings);
-            //}
 
+            var value = database.Connection.QueryFirstOrDefault<T>(sql, bindings);
             SyncAndCheckGuid(database, tableName, value);
-
             return value;
         }
 
         public static IList<T> GetObjectList<T>(Database database, string tableName, Query query = null) where T : Entity
         {
-            IList<T> values;
             var xQuery = NewQuery(tableName, query);
             xQuery.ClearComponent("select").SelectRaw("*");
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            //using (database.Connection)
-            //{
-                values = database.Connection.Query<T>(sql, bindings).ToList();
-            //}
+
+            var values = database.Connection.Query<T>(sql, bindings).ToList();
             foreach (var dataInfo in values)
             {
                 SyncAndCheckGuid(database, tableName, dataInfo);
@@ -267,22 +225,16 @@ namespace Datory.Utils
         public static int InsertObject<T>(Database database, string tableName, IEnumerable<TableColumn> tableColumns, T dataInfo) where T : Entity
         {
             if (dataInfo == null) return 0;
-            dataInfo.Guid = ConvertUtils.GetGuid();
+            dataInfo.Guid = Utilities.GetGuid();
             dataInfo.LastModifiedDate = DateTime.Now;
-            //using (var connection = GetConnection())
-            //{
-            //    dataInfo.Id = Convert.ToInt32(connection.Insert(dataInfo));
-            //}
-
-            //return dataInfo.Id;
 
             var dictionary = new Dictionary<string, object>();
             foreach (var tableColumn in tableColumns)
             {
-                if (ConvertUtils.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.Id))) continue;
+                if (Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.Id))) continue;
 
                 var value = tableColumn.IsExtend
-                    ? ConvertUtils.JsonSerialize(dataInfo.ToDictionary(dataInfo.GetColumnNames()))
+                    ? Utilities.JsonSerialize(dataInfo.ToDictionary(dataInfo.GetColumnNames()))
                     : dataInfo.Get(tableColumn.AttributeName);
 
                 dictionary[tableColumn.AttributeName] = value;
@@ -291,68 +243,34 @@ namespace Datory.Utils
             var xQuery = NewQuery(tableName);
             xQuery.AsInsert(dictionary, true);
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            //using (database.Connection)
-            //{
-                dataInfo.Id = database.Connection.QueryFirst<int>(sql, bindings);
-            //}
 
+            dataInfo.Id = database.Connection.QueryFirst<int>(sql, bindings);
             return dataInfo.Id;
         }
 
         public static int DeleteAll(Database database, string tableName, Query query = null)
         {
-            int affected;
             var xQuery = NewQuery(tableName, query);
             xQuery.AsDelete();
 
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            //using (database.Connection)
-            //{
-                affected = database.Connection.Execute(sql, bindings);
-            //}
 
-            return affected;
+            return database.Connection.Execute(sql, bindings);
         }
 
         public static int UpdateAll(Database database, string tableName, Query query)
         {
-            int affected;
             var xQuery = NewQuery(tableName, query);
 
             xQuery.Method = "update";
 
             var (sql, bindings) = Compile(database, tableName, xQuery);
-            //using (database.Connection)
-            //{
-                affected = database.Connection.Execute(sql, bindings);
-            //}
 
-            return affected;
+            return database.Connection.Execute(sql, bindings);
         }
 
         public static int IncrementAll(Database database, string tableName, Query query, int num = 1)
         {
-            
-
-            //int affected;
-            //var sql =
-            //    $"UPDATE {tableName} SET {columnName} = {DatorySql.ColumnIncrement(columnName, num)}, {nameof(IDataInfo.LastModifiedDate)} = @{nameof(IDataInfo.LastModifiedDate)}";
-            //var bindings = new Dictionary<string, object>
-            //{
-            //    [nameof(IDataInfo.LastModifiedDate)] = DateTime.Now
-            //};
-            //var xQuery = NewQuery(tableName, query);
-            //var result = Compile(sql, bindings, xQuery);
-            //using (var connection = GetConnection())
-            //{
-            //    affected = connection.Execute(result.sql, result.bindings);
-            //}
-
-            //xQuery.ClearComponent("update")
-            //    .UpdateRaw($"{columnName} = {DatorySql.ColumnIncrement(columnName, num)}", null);
-
-            //return affected;
-
             var xQuery = NewQuery(tableName, query);
 
             var columnName = GetFirstSelectColumnName(xQuery);
@@ -367,22 +285,6 @@ namespace Datory.Utils
 
         public static int DecrementAll(Database database, string tableName, Query query, int num = 1)
         {
-            //int affected;
-            //var sql =
-            //    $"UPDATE {tableName} SET {columnName} = {DatorySql.ColumnDecrement(columnName, num)}, {nameof(IDataInfo.LastModifiedDate)} = @{nameof(IDataInfo.LastModifiedDate)}";
-            //var bindings = new Dictionary<string, object>
-            //{
-            //    [nameof(IDataInfo.LastModifiedDate)] = DateTime.Now
-            //};
-            //var xQuery = NewQuery(tableName, query);
-            //var result = Compile(sql, bindings, xQuery);
-            //using (var connection = GetConnection())
-            //{
-            //    affected = connection.Execute(result.sql, result.bindings);
-            //}
-
-            //return affected;
-
             var xQuery = NewQuery(tableName, query);
 
             var columnName = GetFirstSelectColumnName(xQuery);
@@ -394,100 +296,5 @@ namespace Datory.Utils
 
             return UpdateAll(database, tableName, xQuery);
         }
-
-        //public static int Execute(Database database, string sql, object param = null)
-        //{
-        //    int affected;
-            
-        //    using (database.Connection)
-        //    {
-        //        affected = connection.Execute(sql, param);
-        //    }
-
-        //    return affected;
-        //}
-
-        //public static IDbConnection GetConnection(Database database)
-        //{
-        //    return DatorySql.GetIDbConnection(databaseType, connectionString);
-        //}
-
-        //private static (string sql, Dictionary<string, object> bindings) Compile(string sql, Dictionary<string, object> bindings, Query queryWhereOnly)
-        //{
-        //    var compiled = Compiler.Value.Compile(queryWhereOnly);
-
-        //    var index = compiled.Sql.IndexOf(" WHERE ", StringComparison.Ordinal);
-        //    if (index != -1)
-        //    {
-        //        sql += compiled.Sql.Substring(index);
-        //    }
-        //    foreach (var binding in compiled.NamedBindings)
-        //    {
-        //        bindings[binding.Key] = binding.Value;
-        //    }
-
-        //    Logger(sql, bindings);
-
-        //    return (sql, bindings);
-        //}
-
-        //public static bool UpdateObject<T>(Database database, string tableName, List<TableColumn> tableColumns, T dataInfo) where T : Entity
-        //{
-        //    if (dataInfo == null || dataInfo.Id <= 0) return false;
-        //    if (!ConvertUtils.IsGuid(dataInfo.Guid))
-        //    {
-        //        dataInfo.Guid = ConvertUtils.GetGuid();
-        //    }
-        //    dataInfo.LastModifiedDate = DateTime.Now;
-
-        //    var dictionary = new Dictionary<string, object>();
-        //    foreach (var tableColumn in tableColumns)
-        //    {
-        //        if (ConvertUtils.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.Id))) continue;
-
-        //        var value = tableColumn.IsExtend
-        //            ? ConvertUtils.JsonSerialize(dataInfo.ToDictionary(dataInfo.GetColumnNames()))
-        //            : dataInfo.Get(tableColumn.AttributeName);
-
-        //        dictionary[tableColumn.AttributeName] = value;
-        //    }
-
-        //    var xQuery = NewQuery(tableName);
-
-        //    xQuery.Where(nameof(Entity.Id), dataInfo.Id);
-        //    xQuery.AsUpdate(dictionary);
-        //    var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
-
-        //    int affected;
-        //    using (database.Connection)
-        //    {
-        //        affected = connection.Execute(sql, bindings);
-        //    }
-
-        //    return affected == 1;
-        //}
-
-        //public static int UpdateValue(string tableName, IDictionary<string, object> values, Query query = null)
-        //{
-        //    if (values == null || values.Count == 0) return 0;
-
-        //    int affected;
-        //    //var dictionary = new Dictionary<string, object>();
-        //    //foreach (var key in values.Keys)
-        //    //{
-        //    //    dictionary[key] = values[key];
-        //    //}
-        //    //dictionary[nameof(IDataInfo.LastModifiedDate)] = DateTime.Now;
-        //    var xQuery = NewQuery(tableName, query);
-        //    xQuery.AsUpdate(values);
-
-        //    var (sql, bindings) = Compile(tableName, xQuery);
-        //    using (var connection = GetConnection())
-        //    {
-        //        affected = connection.Execute(sql, bindings);
-        //    }
-
-        //    return affected;
-        //}
     }
 }

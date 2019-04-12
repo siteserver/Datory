@@ -14,7 +14,7 @@ namespace Datory
 
         public virtual bool Delete(string guid)
         {
-            if (!ConvertUtils.IsGuid(guid)) return false;
+            if (!Utilities.IsGuid(guid)) return false;
 
             return Delete(Q.Where(nameof(Entity.Guid), guid)) > 0;
         }

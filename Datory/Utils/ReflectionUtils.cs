@@ -11,8 +11,6 @@ namespace Datory.Utils
 {
     internal static class ReflectionUtils
     {
-        #region Caches
-
         private static readonly ConcurrentDictionary<RuntimeTypeHandle, IEnumerable<PropertyInfo>> TypeProperties = new ConcurrentDictionary<RuntimeTypeHandle, IEnumerable<PropertyInfo>>();
 
         public static List<PropertyInfo> GetTypeProperties(Type type)
@@ -22,8 +20,6 @@ namespace Datory.Utils
                 return pis.ToList();
             }
 
-            //changed
-            //var properties = type.GetProperties().Where(IsWriteable).ToArray();
             var properties = type.GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance).ToArray();
 
             TypeProperties[type.TypeHandle] = properties;
@@ -47,7 +43,7 @@ namespace Datory.Utils
 
         public static List<TableColumn> GetTableColumns(Type type)
         {
-            if (TableColumns.TryGetValue(type.TypeHandle, out IEnumerable<TableColumn> tc))
+            if (TableColumns.TryGetValue(type.TypeHandle, out var tc))
             {
                 return tc.ToList();
             }
@@ -97,8 +93,9 @@ namespace Datory.Utils
                 return tc;
             }
 
-            var columnName = GetTableColumns(type).Where(x => x.IsExtend).Select(x => x.AttributeName).FirstOrDefault();
-            if (columnName == null) columnName = string.Empty;
+            var columnName =
+                GetTableColumns(type).Where(x => x.IsExtend).Select(x => x.AttributeName).FirstOrDefault() ??
+                string.Empty;
 
             TableExtendColumnName[type.TypeHandle] = columnName;
             return columnName;
@@ -106,9 +103,12 @@ namespace Datory.Utils
 
         private static List<TableColumn> GetTableColumnsByReflection(Type type)
         {
+            var entityColumns = new List<TableColumn>();
             var tableColumns = new List<TableColumn>();
 
             var properties = type.GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance).ToArray();
+
+
 
             foreach (var propertyInfo in properties)
             {
@@ -163,44 +163,21 @@ namespace Datory.Utils
                     IsExtend = dataExtend
                 };
 
-                tableColumns.Add(tableColumn);
+                if (Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.Id)) || Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.Guid)) || Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.LastModifiedDate)))
+                {
+                    entityColumns.Add(tableColumn);
+                }
+                else
+                {
+                    tableColumns.Add(tableColumn);
+                }
             }
 
-            return tableColumns;
-        }
+            var columns = new List<TableColumn>();
+            columns.AddRange(entityColumns);
+            columns.AddRange(tableColumns);
 
-        #endregion
-
-        //public static T ToObject<T>(IDictionary<string, object> source) where T : class, new()
-        //{
-        //    var obj = new T();
-
-        //    var type = typeof(T);
-        //    foreach (var property in GetTypeProperties(type))
-        //    {
-        //        var val = source[property.Name];
-        //        if (val == null) continue;
-        //        if (property.PropertyType.IsGenericType && property.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
-        //        {
-        //            var genericType = Nullable.GetUnderlyingType(property.PropertyType);
-        //            if (genericType != null) property.SetValue(obj, Convert.ChangeType(val, genericType), null);
-        //        }
-        //        else
-        //        {
-        //            property.SetValue(obj, Convert.ChangeType(val, property.PropertyType), null);
-        //        }
-        //    }
-
-        //    return obj;
-        //}
-
-        public static IDictionary<string, object> ToDictionary(object source, BindingFlags bindingAttr = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance)
-        {
-            return source.GetType().GetProperties(bindingAttr).ToDictionary
-            (
-                propInfo => propInfo.Name,
-                propInfo => propInfo.GetValue(source, null)
-            );
+            return columns;
         }
 
         public static IList<KeyValuePair<string, object>> ToKeyValueList(object parameters)
@@ -211,21 +188,6 @@ namespace Datory.Utils
             var props = type.GetProperties();
             return props.Select(x => new KeyValuePair<string, object>(x.Name, x.GetValue(parameters, null))).ToList();
         }
-
-        //public static T GetValue<T>(object obj, string propertyName)
-        //{
-        //    var value = GetValue(obj, propertyName);
-
-        //    switch (value)
-        //    {
-        //        case null:
-        //            return default(T);
-        //        case T variable:
-        //            return variable;
-        //        default:
-        //            return default(T);
-        //    }
-        //}
 
         public static object GetValue(object obj, string propertyName)
         {

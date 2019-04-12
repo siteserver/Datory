@@ -23,8 +23,8 @@ namespace Datory
 
         public static Query Set(this Query query, string column, object value)
         {
-            if (ConvertUtils.EqualsIgnoreCase(column, nameof(Entity.Id)) ||
-                ConvertUtils.EqualsIgnoreCase(column, nameof(Entity.LastModifiedDate))) return query;
+            if (Utilities.EqualsIgnoreCase(column, nameof(Entity.Id)) ||
+                Utilities.EqualsIgnoreCase(column, nameof(Entity.LastModifiedDate))) return query;
 
             query.AddComponent("update", new BasicCondition
             {

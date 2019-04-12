@@ -10,12 +10,8 @@ using Newtonsoft.Json.Serialization;
 
 namespace Datory.Utils
 {
-    internal static class ConvertUtils
+    internal static class Utilities
     {
-        
-
-        // ------------------- transateutis ----------------------------
-
         private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
         {
             ContractResolver = new CamelCasePropertyNamesContractResolver(),
@@ -30,13 +26,6 @@ namespace Datory.Utils
         {
             try
             {
-                //var settings = new JsonSerializerSettings
-                //{
-                //    ContractResolver = new CamelCasePropertyNamesContractResolver()
-                //};
-                //var timeFormat = new IsoDateTimeConverter {DateTimeFormat = "yyyy-MM-dd HH:mm:ss"};
-                //settings.Converters.Add(timeFormat);
-
                 return JsonConvert.SerializeObject(obj, JsonSettings);
             }
             catch
@@ -49,10 +38,6 @@ namespace Datory.Utils
         {
             try
             {
-                //var settings = new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() };
-                //var timeFormat = new IsoDateTimeConverter { DateTimeFormat = "yyyy-MM-dd HH:mm:ss" };
-                //settings.Converters.Add(timeFormat);
-
                 return JsonConvert.DeserializeObject<T>(json, JsonSettings);
             }
             catch
@@ -67,11 +52,6 @@ namespace Datory.Utils
 
             return dict.TryGetValue(name, out var extendValue) ? extendValue : null;
         }
-
-        //public static T Get<T>(IDictionary<string, object> dict, string name, T defaultValue)
-        //{
-        //    return Get(Get(dict, name), defaultValue);
-        //}
 
         public static T Get<T>(object value, T defaultValue = default(T))
         {
@@ -146,19 +126,6 @@ namespace Datory.Utils
             return boolean;
         }
 
-        //public static int ToInt(string intStr, int defaultValue = 0)
-        //{
-        //    if (!int.TryParse(intStr?.Trim().TrimStart('0'), out var i))
-        //    {
-        //        i = defaultValue;
-        //    }
-        //    if (i < 0)
-        //    {
-        //        i = defaultValue;
-        //    }
-        //    return i;
-        //}
-
         public static decimal ToDecimal(string intStr, decimal defaultValue = 0)
         {
             if (!decimal.TryParse(intStr?.Trim(), out var i))
@@ -171,10 +138,6 @@ namespace Datory.Utils
             }
             return i;
         }
-
-        // ------------------- transateutis ----------------------------
-
-        // ------------------- stringutis ----------------------------
 
         public static bool IsGuid(string val)
         {

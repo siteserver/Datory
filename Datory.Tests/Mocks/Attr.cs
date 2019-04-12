@@ -8,9 +8,11 @@
 
         public const string LastModifiedDate = nameof(TestTableInfo.LastModifiedDate);
 
-        public const string VarChar100 = nameof(TestTableInfo.VarChar100);
+        public const string TypeVarChar100 = nameof(TestTableInfo.TypeVarChar100);
 
-        public const string VarCharDefault = nameof(TestTableInfo.VarCharDefault);
+        public const string TypeVarCharDefault = nameof(TestTableInfo.TypeVarCharDefault);
+
+        public const string TypeBool = nameof(TestTableInfo.TypeBool);
 
         public const string Content = nameof(TestTableInfo.Content);
 

@@ -13,9 +13,9 @@ namespace Datory.Tests
             var codeBaseUrl = new Uri(Assembly.GetExecutingAssembly().CodeBase);
             var codeBasePath = Uri.UnescapeDataString(codeBaseUrl.AbsolutePath);
             var dirPath = Path.GetDirectoryName(codeBasePath);
-            ApplicationPhysicalPath = Path.Combine(GetParentPath(GetParentPath(GetParentPath(GetParentPath(dirPath)))), "SiteServer.Web");
+            ApplicationPhysicalPath = GetParentPath(GetParentPath(GetParentPath(dirPath)));
 
-            EnvUtils.Load(ApplicationPhysicalPath, Path.Combine(ApplicationPhysicalPath, EnvUtils.WebConfigFileName));
+            EnvUtils.Load(Path.Combine(ApplicationPhysicalPath, "Web.config"));
         }
 
         private static string GetParentPath(string path)
