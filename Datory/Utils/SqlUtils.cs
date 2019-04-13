@@ -88,28 +88,6 @@ namespace Datory.Utils
             return retVal;
         }
 
-        public static string GetConnectionStringUserId(string connectionString)
-        {
-            var userId = string.Empty;
-
-            foreach (var pair in Utilities.StringCollectionToStringList(connectionString, ';'))
-            {
-                if (!string.IsNullOrEmpty(pair) && pair.IndexOf("=", StringComparison.Ordinal) != -1)
-                {
-                    var key = pair.Substring(0, pair.IndexOf("=", StringComparison.Ordinal));
-                    var value = pair.Substring(pair.IndexOf("=", StringComparison.Ordinal) + 1);
-                    if (Utilities.EqualsIgnoreCase(key, "Uid") ||
-                        Utilities.EqualsIgnoreCase(key, "Username") ||
-                        Utilities.EqualsIgnoreCase(key, "User ID"))
-                    {
-                        return value;
-                    }
-                }
-            }
-
-            return userId;
-        }
-
         public static string GetAutoIncrementDataType(DatabaseType databaseType, bool alterTable = false)
         {
             var retVal = string.Empty;
@@ -498,7 +476,7 @@ and au.constraint_type = 'P' and cu.OWNER = '{owner}' and cu.table_name = '{tabl
         {
             var list = new List<TableColumn>();
             var sqlString =
-                $"SELECT COLUMN_NAME AS ColumnName, UDT_NAME AS UdtName, CHARACTER_MAXIMUM_LENGTH AS CharacterMaximumLength, COLUMN_DEFAULT AS ColumnDefault FROM information_schema.columns WHERE table_catalog = '{database.Owner}' AND table_name = '{tableName.ToLower()}' ORDER BY ordinal_position";
+                $"SELECT COLUMN_NAME AS ColumnName, UDT_NAME AS UdtName, CHARACTER_MAXIMUM_LENGTH AS CharacterMaximumLength, COLUMN_DEFAULT AS ColumnDefault FROM information_schema.columns WHERE table_catalog = '{database.Name}' AND table_name = '{tableName.ToLower()}' ORDER BY ordinal_position";
 
             var columns = database.Connection.Query<dynamic>(sqlString);
             foreach (var column in columns)
@@ -525,7 +503,7 @@ and au.constraint_type = 'P' and cu.OWNER = '{owner}' and cu.table_name = '{tabl
             }
 
             sqlString =
-                $"select column_name AS ColumnName, constraint_name AS ConstraintName from information_schema.key_column_usage where table_catalog = '{database.Owner}' and table_name = '{tableName.ToLower()}';";
+                $"select column_name AS ColumnName, constraint_name AS ConstraintName from information_schema.key_column_usage where table_catalog = '{database.Name}' and table_name = '{tableName.ToLower()}';";
 
             var rows = database.Connection.Query<dynamic>(sqlString);
             foreach (var row in rows)
@@ -554,7 +532,7 @@ and au.constraint_type = 'P' and cu.OWNER = '{owner}' and cu.table_name = '{tabl
         public static List<TableColumn> GetSqlServerColumns(Database database, string tableName)
         {
             var sqlString =
-                $"select id from sysobjects where type = 'U' and category <> 2 and name = '{tableName}'";
+                $"select id from [{database.Name}]..sysobjects where type = 'U' and category <> 2 and name = '{tableName}'";
 
             var tableId = database.Connection.QueryFirstOrDefault<string>(sqlString);
             if (string.IsNullOrEmpty(tableId)) return new List<TableColumn>();
@@ -622,31 +600,54 @@ and au.constraint_type = 'P' and cu.OWNER = '{owner}' and cu.table_name = '{tabl
             var list = new List<TableColumn>();
 
             var sqlString =
-                $"select COLUMN_NAME AS ColumnName, DATA_TYPE AS DataType, CHARACTER_MAXIMUM_LENGTH AS DataLength, COLUMN_KEY AS ColumnKey, EXTRA AS Extra from information_schema.columns where table_schema = '{database.Owner}' and table_name = '{tableName}' order by table_name,ordinal_position; ";
+                $"select COLUMN_NAME AS ColumnName, DATA_TYPE AS DataType, CHARACTER_MAXIMUM_LENGTH AS DataLength, COLUMN_KEY AS ColumnKey, EXTRA AS Extra from information_schema.columns where table_schema = '{database.Name}' and table_name = '{tableName}' order by table_name,ordinal_position; ";
 
-            var columns = database.Connection.Query<dynamic>(sqlString);
-            foreach (var column in columns)
+            using (var rdr = database.Connection.ExecuteReader(sqlString))
             {
-                var columnName = column.ColumnName;
-                var dataType = ToMySqlDataType(column.DataType);
-                var dataLength = column.DataLength;
-
-                var length = dataLength == null || dataType == DataType.Text ? 0 : dataLength;
-
-                var isPrimaryKey = Convert.ToString(column.ColumnKey) == "PRI";
-                var isIdentity = Convert.ToString(column.Extra) == "auto_increment";
-
-                var info = new TableColumn
+                while (rdr.Read())
                 {
-                    AttributeName = columnName,
-                    DataType = dataType,
-                    DataLength = length,
-                    IsPrimaryKey = isPrimaryKey,
-                    IsIdentity = isIdentity
-                };
-                list.Add(info);
+                    var columnName = rdr.IsDBNull(0) ? string.Empty : rdr.GetString(0);
+                    var dataType = ToMySqlDataType(rdr.IsDBNull(1) ? string.Empty : rdr.GetString(1));
+                    var length = rdr.IsDBNull(2) || dataType == DataType.Text ? 0 : Convert.ToInt32(rdr.GetValue(2));
+                    var isPrimaryKey = Convert.ToString(rdr.GetValue(3)) == "PRI";
+                    var isIdentity = Convert.ToString(rdr.GetValue(4)) == "auto_increment";
 
+                    var info = new TableColumn
+                    {
+                        AttributeName = columnName,
+                        DataType = dataType,
+                        DataLength = length,
+                        IsPrimaryKey = isPrimaryKey,
+                        IsIdentity = isIdentity
+                    };
+                    list.Add(info);
+                }
+                rdr.Close();
             }
+
+            //var columns = database.Connection.Query<dynamic>(sqlString);
+            //foreach (var column in columns)
+            //{
+            //    var columnName = column.ColumnName;
+            //    var dataType = ToMySqlDataType(column.DataType);
+            //    var dataLength = column.DataLength;
+
+            //    var length = dataLength == null || dataType == DataType.Text ? 0 : dataLength;
+
+            //    var isPrimaryKey = Convert.ToString(column.ColumnKey) == "PRI";
+            //    var isIdentity = Convert.ToString(column.Extra) == "auto_increment";
+
+            //    var info = new TableColumn
+            //    {
+            //        AttributeName = columnName,
+            //        DataType = dataType,
+            //        DataLength = length,
+            //        IsPrimaryKey = isPrimaryKey,
+            //        IsIdentity = isIdentity
+            //    };
+            //    list.Add(info);
+
+            //}
 
             return list;
         }

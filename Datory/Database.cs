@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Data;
-using Dapper;
 using Datory.Utils;
 
 namespace Datory
@@ -36,7 +35,29 @@ namespace Datory
             //    Name = SqlUtils.GetValueFromConnectionString(ConnectionString, "Database");
             //}
 
-            Owner = SqlUtils.GetConnectionStringUserId(ConnectionString);
+            Owner = GetOwner(ConnectionString);
+        }
+
+        private static string GetOwner(string connectionString)
+        {
+            var userId = string.Empty;
+
+            foreach (var pair in Utilities.StringCollectionToStringList(connectionString, ';'))
+            {
+                if (!string.IsNullOrEmpty(pair) && pair.IndexOf("=", StringComparison.Ordinal) != -1)
+                {
+                    var key = pair.Substring(0, pair.IndexOf("=", StringComparison.Ordinal));
+                    var value = pair.Substring(pair.IndexOf("=", StringComparison.Ordinal) + 1);
+                    if (Utilities.EqualsIgnoreCase(key, "Uid") ||
+                        Utilities.EqualsIgnoreCase(key, "Username") ||
+                        Utilities.EqualsIgnoreCase(key, "User ID"))
+                    {
+                        return value;
+                    }
+                }
+            }
+
+            return userId;
         }
     }
 }

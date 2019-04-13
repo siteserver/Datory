@@ -67,7 +67,7 @@ namespace Datory
                 }
                 else
                 {
-                    var sql = $"SELECT COUNT(*) FROM ALL_OBJECTS WHERE OBJECT_TYPE = 'TABLE' AND OWNER = '{SqlUtils.GetConnectionStringUserId(database.ConnectionString).ToUpper()}' and OBJECT_NAME = '{tableName}'";
+                    var sql = $"SELECT COUNT(*) FROM ALL_OBJECTS WHERE OBJECT_TYPE = 'TABLE' AND OWNER = '{database.Owner.ToUpper()}' and OBJECT_NAME = '{tableName}'";
 
                     exists = database.Connection.ExecuteScalar<int>(sql) == 1;
                 }
@@ -300,17 +300,19 @@ namespace Datory
 
             if (database.DatabaseType == DatabaseType.MySql)
             {
-                sqlString = $"SELECT table_name FROM information_schema.tables WHERE table_schema='{database.Owner}' ORDER BY table_name";
+                sqlString = $"SELECT table_name FROM information_schema.tables WHERE table_schema='{database.Name}' ORDER BY table_name";
+
+                
             }
             else if (database.DatabaseType == DatabaseType.SqlServer)
             {
                 sqlString =
-                    "SELECT name FROM sysobjects WHERE type = 'U' AND category <> 2 ORDER BY Name";
+                    $"SELECT name FROM [{database.Name}]..sysobjects WHERE type = 'U' AND category<>2 ORDER BY Name";
             }
             else if (database.DatabaseType == DatabaseType.PostgreSql)
             {
                 sqlString =
-                    $"SELECT table_name FROM information_schema.tables WHERE table_catalog = '{database.Owner}' AND table_type = 'BASE TABLE' AND table_schema NOT IN ('pg_catalog', 'information_schema')";
+                    $"SELECT table_name FROM information_schema.tables WHERE table_catalog = '{database.Name}' AND table_type = 'BASE TABLE' AND table_schema NOT IN ('pg_catalog', 'information_schema')";
             }
             else if (database.DatabaseType == DatabaseType.Oracle)
             {
