@@ -21,7 +21,7 @@ namespace Datory
 
         public virtual int Delete(Query query = null)
         {
-            return RepositoryUtils.DeleteAll(Database, TableName, query);
+            return RepositoryUtils.DeleteAll(DatabaseType, ConnectionString, TableName, query);
         }
     }
 }

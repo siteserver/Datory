@@ -16,7 +16,7 @@ namespace Datory.Utils
             return query != null ? query.Clone().From(tableName) : new Query(tableName);
         }
 
-        private static (string sql, Dictionary<string, object> namedBindings) Compile(Database database, string tableName, Query query)
+        private static (string sql, Dictionary<string, object> namedBindings) Compile(DatabaseType databaseType, string connectionString, string tableName, Query query)
         {
             var method = query.Method;
             if (method == "update")
@@ -27,7 +27,7 @@ namespace Datory.Utils
             string sql;
             Dictionary<string, object> namedBindings;
 
-            var compiler = SqlUtils.GetCompiler(database);
+            var compiler = SqlUtils.GetCompiler(databaseType, connectionString);
             var compiled = compiler.Compile(query);
 
             if (method == "update")
@@ -97,7 +97,7 @@ namespace Datory.Utils
             return (sql, namedBindings);
         }
 
-        public static void SyncAndCheckGuid(Database database, string tableName, Entity dataInfo)
+        public static void SyncAndCheckGuid(DatabaseType databaseType, string connectionString, string tableName, Entity dataInfo)
         {
             if (dataInfo == null || dataInfo.Id <= 0) return;
 
@@ -111,118 +111,140 @@ namespace Datory.Utils
             dataInfo.Guid = Utilities.GetGuid();
             dataInfo.LastModifiedDate = DateTime.Now;
 
-            UpdateAll(database, tableName, new Query()
+            UpdateAll(databaseType, connectionString, tableName, new Query()
                 .Set(nameof(Entity.Guid), dataInfo.Guid)
                 .Where(nameof(Entity.Id), dataInfo.Id)
             );
         }
 
-        public static bool Exists(Database database, string tableName, Query query = null)
+        public static bool Exists(DatabaseType databaseType, string connectionString, string tableName, Query query = null)
         {
             var xQuery = NewQuery(tableName, query);
             xQuery.ClearComponent("select").SelectRaw("COUNT(1)").ClearComponent("order");
-            var (sql, bindings) = Compile(database, tableName, xQuery);
+            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
 
-            return database.Connection.ExecuteScalar<bool>(sql, bindings);
+            using (var connection = new Connection(databaseType, connectionString))
+            {
+                return connection.ExecuteScalar<bool>(sql, bindings);
+            }
         }
 
-        public static int Count(Database database, string tableName, Query query = null)
+        public static int Count(DatabaseType databaseType, string connectionString, string tableName, Query query = null)
         {
             var xQuery = NewQuery(tableName, query);
             xQuery.ClearComponent("order").AsCount();
-            var (sql, bindings) = Compile(database, tableName, xQuery);
+            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
 
-            return database.Connection.ExecuteScalar<int>(sql, bindings);
-        }
-
-        private static string GetFirstSelectColumnName(Query query)
-        {
-            string column = null;
-
-            var components = query?.GetComponents("select");
-            if (components == null) return null;
-
-            foreach (var clause in components)
+            using (var connection = new Connection(databaseType, connectionString))
             {
-                if (!(clause is Column select)) continue;
-                column = select.Name;
-                break;
+                return connection.ExecuteScalar<int>(sql, bindings);
             }
-
-            return column;
         }
 
-        public static int Sum(Database database, string tableName, Query query = null)
+        //private static string GetFirstSelectColumnName(Query query)
+        //{
+        //    string column = null;
+
+        //    var components = query?.GetComponents("select");
+        //    if (components == null) return null;
+
+        //    foreach (var clause in components)
+        //    {
+        //        if (!(clause is Column select)) continue;
+        //        column = select.Name;
+        //        break;
+        //    }
+
+        //    return column;
+        //}
+
+        public static int Sum(DatabaseType databaseType, string connectionString, string tableName, string columnName, Query query = null)
         {
             var xQuery = NewQuery(tableName, query);
 
-            var columnName = GetFirstSelectColumnName(xQuery);
-            if (string.IsNullOrEmpty(columnName)) throw new ArgumentNullException(nameof(query.Select));
-
             xQuery.AsSum(columnName);
-            var (sql, bindings) = Compile(database, tableName, xQuery);
+            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
 
-            return database.Connection.ExecuteScalar<int>(sql, bindings);
+            using (var connection = new Connection(databaseType, connectionString))
+            {
+                return connection.ExecuteScalar<int>(sql, bindings);
+            }
         }
 
-        public static TValue GetValue<TValue>(Database database, string tableName, Query query)
+        public static TValue GetValue<TValue>(DatabaseType databaseType, string connectionString, string tableName, Query query)
         {
-            if (query == null) return default(TValue);
+            if (query == null) return default;
 
             var xQuery = NewQuery(tableName, query);
             xQuery.Limit(1);
-            var (sql, bindings) = Compile(database, tableName, xQuery);
+            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
 
-            return database.Connection.QueryFirstOrDefault<TValue>(sql, bindings);
+            using (var connection = new Connection(databaseType, connectionString))
+            {
+                return connection.QueryFirstOrDefault<TValue>(sql, bindings);
+            }
         }
 
-        public static IList<TValue> GetValueList<TValue>(Database database, string tableName, Query query = null)
+        public static IList<TValue> GetValueList<TValue>(DatabaseType databaseType, string connectionString, string tableName, Query query = null)
         {
             var xQuery = NewQuery(tableName, query);
-            var (sql, bindings) = Compile(database, tableName, xQuery);
+            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
 
-            return database.Connection.Query<TValue>(sql, bindings).ToList();
+            using (var connection = new Connection(databaseType, connectionString))
+            {
+                return connection.Query<TValue>(sql, bindings).ToList();
+            }
         }
 
-        public static int? Max(Database database, string tableName, Query query = null)
+        public static int? Max(DatabaseType databaseType, string connectionString, string tableName, string columnName, Query query = null)
         {
             var xQuery = NewQuery(tableName, query);
-
-            var columnName = GetFirstSelectColumnName(xQuery);
-            if (string.IsNullOrEmpty(columnName)) throw new ArgumentNullException($"{nameof(Query)}.{nameof(Query.Select)}");
 
             xQuery.AsMax(columnName);
-            var (sql, bindings) = Compile(database, tableName, xQuery);
+            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
 
-            return database.Connection.QueryFirstOrDefault<int?>(sql, bindings);
+            using (var connection = new Connection(databaseType, connectionString))
+            {
+                return connection.QueryFirstOrDefault<int?>(sql, bindings);
+            }
         }
 
-        public static T GetObject<T>(Database database, string tableName, Query query = null) where T : Entity
+        public static T GetObject<T>(DatabaseType databaseType, string connectionString, string tableName, Query query = null) where T : Entity
         {
             var xQuery = NewQuery(tableName, query);
             xQuery.ClearComponent("select").SelectRaw("*").Limit(1);
-            var (sql, bindings) = Compile(database, tableName, xQuery);
+            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
 
-            var value = database.Connection.QueryFirstOrDefault<T>(sql, bindings);
-            SyncAndCheckGuid(database, tableName, value);
+            T value;
+            using (var connection = new Connection(databaseType, connectionString))
+            {
+                value = connection.QueryFirstOrDefault<T>(sql, bindings);
+            }
+
+            SyncAndCheckGuid(databaseType, connectionString, tableName, value);
             return value;
         }
 
-        public static IList<T> GetObjectList<T>(Database database, string tableName, Query query = null) where T : Entity
+        public static IList<T> GetObjectList<T>(DatabaseType databaseType, string connectionString, string tableName, Query query = null) where T : Entity
         {
             var xQuery = NewQuery(tableName, query);
             xQuery.ClearComponent("select").SelectRaw("*");
-            var (sql, bindings) = Compile(database, tableName, xQuery);
+            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
 
-            var values = database.Connection.Query<T>(sql, bindings).ToList();
+            List<T> values;
+            using (var connection = new Connection(databaseType, connectionString))
+            {
+                values = connection.Query<T>(sql, bindings).ToList();
+            }
+
             foreach (var dataInfo in values)
             {
-                SyncAndCheckGuid(database, tableName, dataInfo);
+                SyncAndCheckGuid(databaseType, connectionString, tableName, dataInfo);
             }
             return values;
         }
 
-        public static int InsertObject<T>(Database database, string tableName, IEnumerable<TableColumn> tableColumns, T dataInfo) where T : Entity
+        public static int InsertObject<T>(DatabaseType databaseType, string connectionString, string tableName, IEnumerable<TableColumn> tableColumns, T dataInfo) where T : Entity
         {
             if (dataInfo == null) return 0;
             dataInfo.Guid = Utilities.GetGuid();
@@ -242,59 +264,63 @@ namespace Datory.Utils
 
             var xQuery = NewQuery(tableName);
             xQuery.AsInsert(dictionary, true);
-            var (sql, bindings) = Compile(database, tableName, xQuery);
+            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
 
-            dataInfo.Id = database.Connection.QueryFirst<int>(sql, bindings);
+            using (var connection = new Connection(databaseType, connectionString))
+            {
+                dataInfo.Id = connection.QueryFirst<int>(sql, bindings);
+            }
+            
             return dataInfo.Id;
         }
 
-        public static int DeleteAll(Database database, string tableName, Query query = null)
+        public static int DeleteAll(DatabaseType databaseType, string connectionString, string tableName, Query query = null)
         {
             var xQuery = NewQuery(tableName, query);
             xQuery.AsDelete();
 
-            var (sql, bindings) = Compile(database, tableName, xQuery);
+            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
 
-            return database.Connection.Execute(sql, bindings);
+            using (var connection = new Connection(databaseType, connectionString))
+            {
+                return connection.Execute(sql, bindings);
+            }
         }
 
-        public static int UpdateAll(Database database, string tableName, Query query)
+        public static int UpdateAll(DatabaseType databaseType, string connectionString, string tableName, Query query)
         {
             var xQuery = NewQuery(tableName, query);
 
             xQuery.Method = "update";
 
-            var (sql, bindings) = Compile(database, tableName, xQuery);
+            var (sql, bindings) = Compile(databaseType, connectionString, tableName, xQuery);
 
-            return database.Connection.Execute(sql, bindings);
+            using (var connection = new Connection(databaseType, connectionString))
+            {
+                return connection.Execute(sql, bindings);
+            }
         }
 
-        public static int IncrementAll(Database database, string tableName, Query query, int num = 1)
+        public static int IncrementAll(DatabaseType databaseType, string connectionString, string tableName, string columnName, Query query, int num = 1)
         {
             var xQuery = NewQuery(tableName, query);
 
-            var columnName = GetFirstSelectColumnName(xQuery);
-            if (string.IsNullOrEmpty(columnName)) throw new ArgumentNullException(nameof(query.Select));
-
             xQuery
                 .ClearComponent("update")
-                .SetRaw($"{columnName} = {SqlUtils.ColumnIncrement(database.DatabaseType, columnName, num)}");
+                .SetRaw($"{columnName} = {SqlUtils.ColumnIncrement(databaseType, columnName, num)}");
 
-            return UpdateAll(database, tableName, xQuery);
+            return UpdateAll(databaseType, connectionString, tableName, xQuery);
         }
 
-        public static int DecrementAll(Database database, string tableName, Query query, int num = 1)
+        public static int DecrementAll(DatabaseType databaseType, string connectionString, string tableName, string columnName, Query query, int num = 1)
         {
             var xQuery = NewQuery(tableName, query);
 
-            var columnName = GetFirstSelectColumnName(xQuery);
-            if (string.IsNullOrEmpty(columnName)) throw new ArgumentNullException(nameof(query.Select));
-
             xQuery
                 .ClearComponent("update")
-                .SetRaw($"{columnName} = {SqlUtils.ColumnDecrement(database.DatabaseType, columnName, num)}");
+                .SetRaw($"{columnName} = {SqlUtils.ColumnDecrement(databaseType, columnName, num)}");
 
-            return UpdateAll(database, tableName, xQuery);
+            return UpdateAll(databaseType, connectionString, tableName, xQuery);
         }
     }
 }

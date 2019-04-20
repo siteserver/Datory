@@ -179,5 +179,25 @@ namespace Datory.Utils
 
             return list.Any(element => EqualsIgnoreCase(element, target));
         }
+
+        public static string GetConnectionStringUserName(string connectionString)
+        {
+            var userId = string.Empty;
+
+            foreach (var pair in StringCollectionToStringList(connectionString, ';'))
+            {
+                if (string.IsNullOrEmpty(pair) || pair.IndexOf("=", StringComparison.Ordinal) == -1) continue;
+                var key = pair.Substring(0, pair.IndexOf("=", StringComparison.Ordinal));
+                var value = pair.Substring(pair.IndexOf("=", StringComparison.Ordinal) + 1);
+                if (EqualsIgnoreCase(key, "Uid") ||
+                    EqualsIgnoreCase(key, "Username") ||
+                    EqualsIgnoreCase(key, "User ID"))
+                {
+                    return value;
+                }
+            }
+
+            return userId;
+        }
     }
 }

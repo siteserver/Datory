@@ -4,7 +4,9 @@ namespace Datory
 {
     public interface IRepository
     {
-        Database Database { get; }
+        DatabaseType DatabaseType { get; }
+
+        string ConnectionString { get; }
 
         string TableName { get; }
 

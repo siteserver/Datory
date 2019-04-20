@@ -6,7 +6,7 @@ namespace Datory
     {
         public virtual int Insert(T dataInfo)
         {
-            return RepositoryUtils.InsertObject(Database, TableName, TableColumns, dataInfo);
+            return RepositoryUtils.InsertObject(DatabaseType, ConnectionString, TableName, TableColumns, dataInfo);
         }
     }
 }

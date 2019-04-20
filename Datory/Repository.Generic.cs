@@ -5,27 +5,31 @@ namespace Datory
 {
     public partial class Repository<T> : IRepository where T : Entity, new()
     {
-        public Database Database { get; }
+        public DatabaseType DatabaseType { get; }
+        public string ConnectionString { get; }
         public string TableName { get; }
         public List<TableColumn> TableColumns { get; }
 
-        public Repository(Database database)
+        public Repository(DatabaseType databaseType, string connectionString)
         {
-            Database = database;
+            DatabaseType = databaseType;
+            ConnectionString = connectionString;
             TableName = ReflectionUtils.GetTableName(typeof(T));
             TableColumns = ReflectionUtils.GetTableColumns(typeof(T));
         }
 
-        public Repository(Database database, string tableName)
+        public Repository(DatabaseType databaseType, string connectionString, string tableName)
         {
-            Database = database;
+            DatabaseType = databaseType;
+            ConnectionString = connectionString;
             TableName = tableName;
             TableColumns = ReflectionUtils.GetTableColumns(typeof(T));
         }
 
-        public Repository(Database database, string tableName, List<TableColumn> tableColumns)
+        public Repository(DatabaseType databaseType, string connectionString, string tableName, List<TableColumn> tableColumns)
         {
-            Database = database;
+            DatabaseType = databaseType;
+            ConnectionString = connectionString;
             TableName = tableName;
             TableColumns = tableColumns;
         }

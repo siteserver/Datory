@@ -1,7 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
 using System.Runtime.CompilerServices;
 using Dapper;
+using MySql.Data.MySqlClient;
+using Npgsql;
+using Oracle.ManagedDataAccess.Client;
 using SqlKata.Compilers;
 
 [assembly: InternalsVisibleTo("Datory.Tests")]
@@ -10,30 +15,54 @@ namespace Datory.Utils
 {
     internal static class SqlUtils
     {
-        public static Compiler GetCompiler(Database database)
+        public static IDbConnection GetConnection(DatabaseType databaseType, string connectionString)
+        {
+            IDbConnection conn = null;
+
+            if (databaseType == DatabaseType.MySql)
+            {
+                conn = new MySqlConnection(connectionString);
+            }
+            else if (databaseType == DatabaseType.SqlServer)
+            {
+                conn = new SqlConnection(connectionString);
+            }
+            else if (databaseType == DatabaseType.PostgreSql)
+            {
+                conn = new NpgsqlConnection(connectionString);
+            }
+            else if (databaseType == DatabaseType.Oracle)
+            {
+                conn = new OracleConnection(connectionString);
+            }
+
+            return conn;
+        }
+
+        public static Compiler GetCompiler(DatabaseType databaseType, string connectionString)
         {
             Compiler compiler = null;
 
-            if (database.DatabaseType == DatabaseType.MySql)
+            if (databaseType == DatabaseType.MySql)
             {
                 compiler = new MySqlCompiler();
             }
-            else if (database.DatabaseType == DatabaseType.SqlServer)
+            else if (databaseType == DatabaseType.SqlServer)
             {
                 compiler = new SqlServerCompiler
                 {
-                    UseLegacyPagination = DatoryUtils.IsUseLegacyPagination(database)
+                    UseLegacyPagination = DatoryUtils.IsUseLegacyPagination(databaseType, connectionString)
                 };
             }
-            else if (database.DatabaseType == DatabaseType.PostgreSql)
+            else if (databaseType == DatabaseType.PostgreSql)
             {
                 compiler = new PostgresCompiler();
             }
-            else if (database.DatabaseType == DatabaseType.Oracle)
+            else if (databaseType == DatabaseType.Oracle)
             {
                 compiler = new OracleCompiler
                 {
-                    UseLegacyPagination = DatoryUtils.IsUseLegacyPagination(database)
+                    UseLegacyPagination = DatoryUtils.IsUseLegacyPagination(databaseType, connectionString)
                 };
             }
 
@@ -409,118 +438,126 @@ namespace Datory.Utils
             return dataType;
         }
 
-        public static List<TableColumn> GetOracleColumns(Database database, string tableName)
+        public static List<TableColumn> GetOracleColumns(DatabaseType databaseType, string connectionString, string tableName)
         {
-            var owner = database.Owner.ToUpper();
-            tableName = tableName.ToUpper();
-
             var list = new List<TableColumn>();
-            var sqlString =
-                $"SELECT COLUMN_NAME AS columnName, DATA_TYPE AS DataType, DATA_PRECISION AS DataPrecision, DATA_SCALE AS DataScale, CHAR_LENGTH AS CharLength, DATA_DEFAULT AS DataDefault FROM all_tab_cols WHERE OWNER = '{owner}' and table_name = '{tableName}' and user_generated = 'YES' ORDER BY COLUMN_ID";
 
-            IEnumerable<dynamic> columns = database.Connection.Query<dynamic>(sqlString);
-
-            foreach (var column in columns)
+            using (var connection = new Connection(databaseType, connectionString))
             {
-                var columnName = column.columnName;
-                var dataType = ToOracleDataType(column.DataType);
-                var percision = column.DataPrecision;
-                var scale = column.DataScale;
-                var charLength = column.CharLength;
-                var dataDefault = column.DataDefault;
+                var owner = Utilities.GetConnectionStringUserName(connectionString).ToUpper();
+                tableName = tableName.ToUpper();
 
-                if (dataType == DataType.Integer)
+                var sqlString =
+                    $"SELECT COLUMN_NAME AS columnName, DATA_TYPE AS DataType, DATA_PRECISION AS DataPrecision, DATA_SCALE AS DataScale, CHAR_LENGTH AS CharLength, DATA_DEFAULT AS DataDefault FROM all_tab_cols WHERE OWNER = '{owner}' and table_name = '{tableName}' and user_generated = 'YES' ORDER BY COLUMN_ID";
+
+                IEnumerable<dynamic> columns = connection.Query<dynamic>(sqlString);
+
+                foreach (var column in columns)
                 {
-                    if (scale == 2)
+                    var columnName = column.columnName;
+                    var dataType = ToOracleDataType(column.DataType);
+                    var percision = column.DataPrecision;
+                    var scale = column.DataScale;
+                    var charLength = column.CharLength;
+                    var dataDefault = column.DataDefault;
+
+                    if (dataType == DataType.Integer)
                     {
-                        dataType = DataType.Decimal;
+                        if (scale == 2)
+                        {
+                            dataType = DataType.Decimal;
+                        }
+                        else if (percision == 1)
+                        {
+                            dataType = DataType.Boolean;
+                        }
                     }
-                    else if (percision == 1)
+                    var isIdentity = dataDefault.Contains(".nextval");
+
+                    var info = new TableColumn
                     {
-                        dataType = DataType.Boolean;
-                    }
+                        AttributeName = columnName,
+                        DataType = dataType,
+                        DataLength = charLength,
+                        IsPrimaryKey = false,
+                        IsIdentity = isIdentity
+                    };
+                    list.Add(info);
                 }
-                var isIdentity = dataDefault.Contains(".nextval");
 
-                var info = new TableColumn
-                {
-                    AttributeName = columnName,
-                    DataType = dataType,
-                    DataLength = charLength,
-                    IsPrimaryKey = false,
-                    IsIdentity = isIdentity
-                };
-                list.Add(info);
-            }
-
-            sqlString =
-                $@"select distinct cu.column_name from all_cons_columns cu inner join all_constraints au 
+                sqlString =
+                    $@"select distinct cu.column_name from all_cons_columns cu inner join all_constraints au 
 on cu.constraint_name = au.constraint_name
 and au.constraint_type = 'P' and cu.OWNER = '{owner}' and cu.table_name = '{tableName}'";
 
-            var columnNames = database.Connection.Query<string>(sqlString);
-            foreach (var columnName in columnNames)
-            {
-                foreach (var tableColumnInfo in list)
+                var columnNames = connection.Query<string>(sqlString);
+                foreach (var columnName in columnNames)
                 {
-                    if (columnName != tableColumnInfo.AttributeName) continue;
-                    tableColumnInfo.IsPrimaryKey = true;
-                    break;
+                    foreach (var tableColumnInfo in list)
+                    {
+                        if (columnName != tableColumnInfo.AttributeName) continue;
+                        tableColumnInfo.IsPrimaryKey = true;
+                        break;
+                    }
                 }
             }
 
             return list;
         }
 
-        public static List<TableColumn> GetPostgreSqlColumns(Database database, string tableName)
+        public static List<TableColumn> GetPostgreSqlColumns(DatabaseType databaseType, string connectionString, string tableName)
         {
             var list = new List<TableColumn>();
-            var sqlString =
-                $"SELECT COLUMN_NAME AS ColumnName, UDT_NAME AS UdtName, CHARACTER_MAXIMUM_LENGTH AS CharacterMaximumLength, COLUMN_DEFAULT AS ColumnDefault FROM information_schema.columns WHERE table_catalog = '{database.Name}' AND table_name = '{tableName.ToLower()}' ORDER BY ordinal_position";
 
-            var columns = database.Connection.Query<dynamic>(sqlString);
-            foreach (var column in columns)
+            using (var connection = new Connection(databaseType, connectionString))
             {
-                var columnName = column.ColumnName;
-                var udtName = column.UdtName;
-                var characterMaximumLength = column.CharacterMaximumLength;
-                var columnDefault = column.ColumnDefault;
+                var sqlString =
+                   $"SELECT COLUMN_NAME AS ColumnName, UDT_NAME AS UdtName, CHARACTER_MAXIMUM_LENGTH AS CharacterMaximumLength, COLUMN_DEFAULT AS ColumnDefault FROM information_schema.columns WHERE table_catalog = '{connection.Database}' AND table_name = '{tableName.ToLower()}' ORDER BY ordinal_position";
 
-                var dataType = ToPostgreSqlDataType(udtName);
-                var length = characterMaximumLength;
-
-                var isIdentity = columnDefault.StartsWith("nextval(");
-
-                var info = new TableColumn
+                var columns = connection.Query<dynamic>(sqlString);
+                foreach (var column in columns)
                 {
-                    AttributeName = columnName,
-                    DataType = dataType,
-                    DataLength = length,
-                    IsPrimaryKey = false,
-                    IsIdentity = isIdentity
-                };
-                list.Add(info);
-            }
+                    var columnName = column.ColumnName;
+                    var udtName = column.UdtName;
+                    var characterMaximumLength = column.CharacterMaximumLength;
+                    var columnDefault = column.ColumnDefault;
 
-            sqlString =
-                $"select column_name AS ColumnName, constraint_name AS ConstraintName from information_schema.key_column_usage where table_catalog = '{database.Name}' and table_name = '{tableName.ToLower()}';";
+                    var dataType = ToPostgreSqlDataType(udtName);
+                    var length = characterMaximumLength;
 
-            var rows = database.Connection.Query<dynamic>(sqlString);
-            foreach (var row in rows)
-            {
-                var columnName = row.ColumnName;
-                var constraintName = row.ConstraintName;
+                    var isIdentity = columnDefault.StartsWith("nextval(");
 
-                var isPrimary = constraintName.StartsWith("pk");
-
-                if (isPrimary)
-                {
-                    foreach (var tableColumnInfo in list)
+                    var info = new TableColumn
                     {
-                        if (columnName == tableColumnInfo.AttributeName)
+                        AttributeName = columnName,
+                        DataType = dataType,
+                        DataLength = length,
+                        IsPrimaryKey = false,
+                        IsIdentity = isIdentity
+                    };
+                    list.Add(info);
+                }
+
+                sqlString =
+                    $"select column_name AS ColumnName, constraint_name AS ConstraintName from information_schema.key_column_usage where table_catalog = '{connection.Database}' and table_name = '{tableName.ToLower()}';";
+
+                var rows = connection.Query<dynamic>(sqlString);
+                foreach (var row in rows)
+                {
+                    var columnName = row.ColumnName;
+                    var constraintName = row.ConstraintName;
+
+                    var isPrimary = constraintName.StartsWith("pk");
+
+                    if (isPrimary)
+                    {
+                        foreach (var tableColumnInfo in list)
                         {
-                            tableColumnInfo.IsPrimaryKey = true;
-                            break;
+                            if (columnName == tableColumnInfo.AttributeName)
+                            {
+                                tableColumnInfo.IsPrimaryKey = true;
+                                break;
+                            }
                         }
                     }
                 }
@@ -529,88 +566,48 @@ and au.constraint_type = 'P' and cu.OWNER = '{owner}' and cu.table_name = '{tabl
             return list;
         }
 
-        public static List<TableColumn> GetSqlServerColumns(Database database, string tableName)
+        public static List<TableColumn> GetSqlServerColumns(DatabaseType databaseType, string connectionString, string tableName)
         {
-            var sqlString =
-                $"select id from [{database.Name}]..sysobjects where type = 'U' and category <> 2 and name = '{tableName}'";
-
-            var tableId = database.Connection.QueryFirstOrDefault<string>(sqlString);
-            if (string.IsNullOrEmpty(tableId)) return new List<TableColumn>();
-
             var list = new List<TableColumn>();
-            var isIdentityExist = false;
 
-            sqlString =
-                $"select C.name AS ColumnName, T.name AS DataTypeName, C.length AS Length, C.colstat AS IsPrimaryKeyInt, case when C.autoval is null then 0 else 1 end AS IsIdentityInt from systypes T, syscolumns C where C.id = {tableId} and C.xtype = T.xusertype order by C.colid";
-
-            var columns = database.Connection.Query<dynamic>(sqlString);
-            foreach (var column in columns)
+            using (var connection = new Connection(databaseType, connectionString))
             {
-                var columnName = column.ColumnName;
-                if (columnName == "msrepl_tran_version")
+                var databaseName = connection.Database;
+
+                var sqlString =
+                $"select id from [{databaseName}]..sysobjects where type = 'U' and category <> 2 and name = '{tableName}'";
+
+                var tableId = connection.QueryFirstOrDefault<string>(sqlString);
+                if (string.IsNullOrEmpty(tableId)) return new List<TableColumn>();
+
+                var isIdentityExist = false;
+
+                sqlString =
+                    $"select C.name AS ColumnName, T.name AS DataTypeName, C.length AS Length, C.colstat AS IsPrimaryKeyInt, case when C.autoval is null then 0 else 1 end AS IsIdentityInt from systypes T, syscolumns C where C.id = {tableId} and C.xtype = T.xusertype order by C.colid";
+
+                var columns = connection.Query<dynamic>(sqlString);
+                foreach (var column in columns)
                 {
-                    continue;
-                }
-
-                var dataTypeName = column.DataTypeName;
-                var length = column.Length;
-                var dataType = ToSqlServerDataType(dataTypeName, Convert.ToString(length));
-                length = dataType == DataType.VarChar ? length : 0;
-                var isPrimaryKeyInt = column.IsPrimaryKeyInt;
-                var isIdentityInt = column.IsIdentityInt;
-
-                var isPrimaryKey = isPrimaryKeyInt == 1;
-                //var isIdentity = isIdentityInt == 1 || StringUtils.EqualsIgnoreCase(columnName, "Id");
-                var isIdentity = isIdentityInt == 1;
-                if (isIdentity)
-                {
-                    isIdentityExist = true;
-                }
-
-                var info = new TableColumn
-                {
-                    AttributeName = columnName,
-                    DataType = dataType,
-                    DataLength = length,
-                    IsPrimaryKey = isPrimaryKey,
-                    IsIdentity = isIdentity
-                };
-                list.Add(info);
-            }
-
-            if (!isIdentityExist)
-            {
-                sqlString = $"select name from syscolumns where id = object_id(N'{tableName}') and COLUMNPROPERTY(id, name,'IsIdentity')= 1";
-
-                var clName = database.Connection.QueryFirstOrDefault<string>(sqlString);
-                foreach (var info in list)
-                {
-                    if (clName == info.AttributeName)
+                    var columnName = column.ColumnName;
+                    if (columnName == "msrepl_tran_version")
                     {
-                        info.IsIdentity = true;
+                        continue;
                     }
-                }
-            }
 
-            return list;
-        }
+                    var dataTypeName = column.DataTypeName;
+                    var length = column.Length;
+                    var dataType = ToSqlServerDataType(dataTypeName, Convert.ToString(length));
+                    length = dataType == DataType.VarChar ? length : 0;
+                    var isPrimaryKeyInt = column.IsPrimaryKeyInt;
+                    var isIdentityInt = column.IsIdentityInt;
 
-        public static List<TableColumn> GetMySqlColumns(Database database, string tableName)
-        {
-            var list = new List<TableColumn>();
-
-            var sqlString =
-                $"select COLUMN_NAME AS ColumnName, DATA_TYPE AS DataType, CHARACTER_MAXIMUM_LENGTH AS DataLength, COLUMN_KEY AS ColumnKey, EXTRA AS Extra from information_schema.columns where table_schema = '{database.Name}' and table_name = '{tableName}' order by table_name,ordinal_position; ";
-
-            using (var rdr = database.Connection.ExecuteReader(sqlString))
-            {
-                while (rdr.Read())
-                {
-                    var columnName = rdr.IsDBNull(0) ? string.Empty : rdr.GetString(0);
-                    var dataType = ToMySqlDataType(rdr.IsDBNull(1) ? string.Empty : rdr.GetString(1));
-                    var length = rdr.IsDBNull(2) || dataType == DataType.Text ? 0 : Convert.ToInt32(rdr.GetValue(2));
-                    var isPrimaryKey = Convert.ToString(rdr.GetValue(3)) == "PRI";
-                    var isIdentity = Convert.ToString(rdr.GetValue(4)) == "auto_increment";
+                    var isPrimaryKey = isPrimaryKeyInt == 1;
+                    //var isIdentity = isIdentityInt == 1 || StringUtils.EqualsIgnoreCase(columnName, "Id");
+                    var isIdentity = isIdentityInt == 1;
+                    if (isIdentity)
+                    {
+                        isIdentityExist = true;
+                    }
 
                     var info = new TableColumn
                     {
@@ -622,7 +619,56 @@ and au.constraint_type = 'P' and cu.OWNER = '{owner}' and cu.table_name = '{tabl
                     };
                     list.Add(info);
                 }
-                rdr.Close();
+
+                if (!isIdentityExist)
+                {
+                    sqlString = $"select name from syscolumns where id = object_id(N'{tableName}') and COLUMNPROPERTY(id, name,'IsIdentity')= 1";
+
+                    var clName = connection.QueryFirstOrDefault<string>(sqlString);
+                    foreach (var info in list)
+                    {
+                        if (clName == info.AttributeName)
+                        {
+                            info.IsIdentity = true;
+                        }
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        public static List<TableColumn> GetMySqlColumns(DatabaseType databaseType, string connectionString, string tableName)
+        {
+            var list = new List<TableColumn>();
+
+            using (var connection = new Connection(databaseType, connectionString))
+            {
+                var sqlString =
+                    $"select COLUMN_NAME AS ColumnName, DATA_TYPE AS DataType, CHARACTER_MAXIMUM_LENGTH AS DataLength, COLUMN_KEY AS ColumnKey, EXTRA AS Extra from information_schema.columns where table_schema = '{connection.Database}' and table_name = '{tableName}' order by table_name,ordinal_position; ";
+
+                using (var rdr = connection.ExecuteReader(sqlString))
+                {
+                    while (rdr.Read())
+                    {
+                        var columnName = rdr.IsDBNull(0) ? string.Empty : rdr.GetString(0);
+                        var dataType = ToMySqlDataType(rdr.IsDBNull(1) ? string.Empty : rdr.GetString(1));
+                        var length = rdr.IsDBNull(2) || dataType == DataType.Text ? 0 : Convert.ToInt32(rdr.GetValue(2));
+                        var isPrimaryKey = Convert.ToString(rdr.GetValue(3)) == "PRI";
+                        var isIdentity = Convert.ToString(rdr.GetValue(4)) == "auto_increment";
+
+                        var info = new TableColumn
+                        {
+                            AttributeName = columnName,
+                            DataType = dataType,
+                            DataLength = length,
+                            IsPrimaryKey = isPrimaryKey,
+                            IsIdentity = isIdentity
+                        };
+                        list.Add(info);
+                    }
+                    rdr.Close();
+                }
             }
 
             //var columns = database.Connection.Query<dynamic>(sqlString);

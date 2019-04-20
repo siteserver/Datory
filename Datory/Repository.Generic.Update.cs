@@ -29,7 +29,7 @@ namespace Datory
                 query.Set(tableColumn.AttributeName, value);
             }
 
-            return RepositoryUtils.UpdateAll(Database, TableName, query) > 0;
+            return RepositoryUtils.UpdateAll(DatabaseType, ConnectionString, TableName, query) > 0;
         }
 
         public virtual bool Update(T dataInfo, params string[] columnNames)
@@ -49,7 +49,7 @@ namespace Datory
                 //{
                 //    query.Set(value.Key, value.Value);
                 //}
-                return RepositoryUtils.UpdateAll(Database, TableName, query) > 0;
+                return RepositoryUtils.UpdateAll(DatabaseType, ConnectionString, TableName, query) > 0;
             }
             if (Utilities.IsGuid(dataInfo.Guid))
             {
@@ -68,7 +68,7 @@ namespace Datory
                 //    query.Set(value.Key, value.Value);
                 //}
 
-                return RepositoryUtils.UpdateAll(Database, TableName, query) > 0;
+                return RepositoryUtils.UpdateAll(DatabaseType, ConnectionString, TableName, query) > 0;
             }
 
             return false;
@@ -76,17 +76,17 @@ namespace Datory
 
         public virtual int Update(Query query)
         {
-            return RepositoryUtils.UpdateAll(Database, TableName, query);
+            return RepositoryUtils.UpdateAll(DatabaseType, ConnectionString, TableName, query);
         }
 
-        public virtual int Increment(Query query, int num = 1)
+        public virtual int Increment(string columnName, Query query, int num = 1)
         {
-            return RepositoryUtils.IncrementAll(Database, TableName, query, num);
+            return RepositoryUtils.IncrementAll(DatabaseType, ConnectionString, TableName, columnName, query, num);
         }
 
-        public virtual int Decrement(Query query, int num = 1)
+        public virtual int Decrement(string columnName, Query query, int num = 1)
         {
-            return RepositoryUtils.DecrementAll(Database, TableName, query, num);
+            return RepositoryUtils.DecrementAll(DatabaseType, ConnectionString, TableName, columnName, query, num);
         }
     }
 }
