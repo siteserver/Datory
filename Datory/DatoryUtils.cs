@@ -15,8 +15,6 @@ namespace Datory
     {
         public const int VarCharDefaultLength = 500;
 
-        
-
         private static readonly ConcurrentDictionary<string, bool> UseLegacyPagination = new ConcurrentDictionary<string, bool>();
 
         public static bool IsUseLegacyPagination(DatabaseType databaseType, string connectionString)
