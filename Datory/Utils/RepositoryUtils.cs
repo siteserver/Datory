@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Dapper;
+using Datory.Database;
 using SqlKata;
 
 [assembly: InternalsVisibleTo("Datory.Tests")]
@@ -27,7 +28,7 @@ namespace Datory.Utils
             string sql;
             Dictionary<string, object> namedBindings;
 
-            var compiler = SqlUtils.GetCompiler(databaseType, connectionString);
+            var compiler = DatoryUtils.GetCompiler(databaseType, connectionString);
             var compiled = compiler.Compile(query);
 
             if (method == "update")
@@ -307,7 +308,7 @@ namespace Datory.Utils
 
             xQuery
                 .ClearComponent("update")
-                .SetRaw($"{columnName} = {SqlUtils.ColumnIncrement(databaseType, columnName, num)}");
+                .SetRaw($"{columnName} = {DatoryUtils.ColumnIncrement(databaseType, columnName, num)}");
 
             return UpdateAll(databaseType, connectionString, tableName, xQuery);
         }
@@ -318,7 +319,7 @@ namespace Datory.Utils
 
             xQuery
                 .ClearComponent("update")
-                .SetRaw($"{columnName} = {SqlUtils.ColumnDecrement(databaseType, columnName, num)}");
+                .SetRaw($"{columnName} = {DatoryUtils.ColumnDecrement(databaseType, columnName, num)}");
 
             return UpdateAll(databaseType, connectionString, tableName, xQuery);
         }

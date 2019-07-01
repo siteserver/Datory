@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Dapper;
 using Datory.Utils;
+using SqlKata.Compilers;
 
 [assembly: InternalsVisibleTo("Datory.Tests")]
 
@@ -63,20 +65,20 @@ namespace Datory
 
             try
             {
-                // ANSI SQL way.  Works in PostgreSQL, MSSQL, MySQL.  
-                if (databaseType != DatabaseType.Oracle)
+                if (databaseType == DatabaseType.Oracle)
                 {
-                    var sql = $"select case when exists((select * from information_schema.tables where table_name = '{tableName}')) then 1 else 0 end";
+                    var userName = Utilities.GetConnectionStringUserName(connectionString);
+                    var sql = $"SELECT COUNT(*) FROM ALL_OBJECTS WHERE OBJECT_TYPE = 'TABLE' AND OWNER = '{userName.ToUpper()}' and OBJECT_NAME = '{tableName}'";
 
                     using (var connection = new Connection(databaseType, connectionString))
                     {
                         exists = connection.ExecuteScalar<int>(sql) == 1;
                     }
+                    
                 }
-                else
+                else // ANSI SQL way.  Works in PostgreSQL, MSSQL, MySQL.  
                 {
-                    var userName = Utilities.GetConnectionStringUserName(connectionString);
-                    var sql = $"SELECT COUNT(*) FROM ALL_OBJECTS WHERE OBJECT_TYPE = 'TABLE' AND OWNER = '{userName.ToUpper()}' and OBJECT_NAME = '{tableName}'";
+                    var sql = $"select case when exists((select * from information_schema.tables where table_name = '{tableName}')) then 1 else 0 end";
 
                     using (var connection = new Connection(databaseType, connectionString))
                     {
@@ -120,7 +122,7 @@ namespace Datory
             {
                 identityColumnName = nameof(Entity.Id);
                 var sqlString =
-                    SqlUtils.GetAddColumnsSqlString(databaseType, tableName, $"{identityColumnName} {SqlUtils.GetAutoIncrementDataType(databaseType, true)}");
+                    GetAddColumnsSqlString(databaseType, tableName, $"{identityColumnName} {GetAutoIncrementDataType(databaseType, true)}");
 
                 using (var connection = new Connection(databaseType, connectionString))
                 {
@@ -148,7 +150,7 @@ namespace Datory
             {
                 if (!Utilities.ContainsIgnoreCase(columnNameList, tableColumn.AttributeName))
                 {
-                    list.Add(SqlUtils.GetAddColumnsSqlString(databaseType, tableName, SqlUtils.GetColumnSqlString(databaseType, tableColumn)));
+                    list.Add(GetAddColumnsSqlString(databaseType, tableName, GetColumnSqlString(databaseType, tableColumn)));
                 }
             }
 
@@ -158,7 +160,7 @@ namespace Datory
                 {
                     if (Utilities.ContainsIgnoreCase(dropColumnNames, columnName))
                     {
-                        list.Add(SqlUtils.GetDropColumnsSqlString(databaseType, tableName, columnName));
+                        list.Add(GetDropColumnsSqlString(databaseType, tableName, columnName));
                     }
                 }
             }
@@ -178,7 +180,7 @@ namespace Datory
         {
             var sqlBuilder = new StringBuilder();
 
-            sqlBuilder.Append($@"CREATE TABLE {SqlUtils.GetQuotedIdentifier(databaseType, tableName)} (").AppendLine();
+            sqlBuilder.Append($@"CREATE TABLE {GetQuotedIdentifier(databaseType, tableName)} (").AppendLine();
 
             var primaryKeyColumns = new List<TableColumn>();
             TableColumn identityColumn = null;
@@ -221,7 +223,7 @@ namespace Datory
                     tableColumn.DataLength = VarCharDefaultLength;
                 }
 
-                var columnSql = SqlUtils.GetColumnSqlString(databaseType, tableColumn);
+                var columnSql = GetColumnSqlString(databaseType, tableColumn);
                 if (!string.IsNullOrEmpty(columnSql))
                 {
                     sqlBuilder.Append(columnSql).Append(",");
@@ -230,7 +232,7 @@ namespace Datory
 
             if (identityColumn != null)
             {
-                var primaryKeySql = SqlUtils.GetPrimaryKeySqlString(databaseType, tableName, identityColumn.AttributeName);
+                var primaryKeySql = GetPrimaryKeySqlString(databaseType, tableName, identityColumn.AttributeName);
                 if (!string.IsNullOrEmpty(primaryKeySql))
                 {
                     sqlBuilder.Append(primaryKeySql).Append(",");
@@ -240,7 +242,7 @@ namespace Datory
             {
                 foreach (var tableColumn in primaryKeyColumns)
                 {
-                    var primaryKeySql = SqlUtils.GetPrimaryKeySqlString(databaseType, tableName, tableColumn.AttributeName);
+                    var primaryKeySql = GetPrimaryKeySqlString(databaseType, tableName, tableColumn.AttributeName);
                     if (!string.IsNullOrEmpty(primaryKeySql))
                     {
                         sqlBuilder.Append(primaryKeySql).Append(",");
@@ -262,7 +264,7 @@ namespace Datory
 
         public static void CreateIndex(DatabaseType databaseType, string connectionString, string tableName, string indexName, params string[] columns)
         {
-            var sqlString = new StringBuilder($@"CREATE INDEX {SqlUtils.GetQuotedIdentifier(databaseType, indexName)} ON {SqlUtils.GetQuotedIdentifier(databaseType, tableName)}(");
+            var sqlString = new StringBuilder($@"CREATE INDEX {GetQuotedIdentifier(databaseType, indexName)} ON {GetQuotedIdentifier(databaseType, tableName)}(");
 
             foreach (var column in columns)
             {
@@ -274,7 +276,7 @@ namespace Datory
                     columnName = column.Substring(0, i);
                     columnOrder = column.Substring(i + 1);
                 }
-                sqlString.Append($"{SqlUtils.GetQuotedIdentifier(databaseType, columnName)} {columnOrder}, ");
+                sqlString.Append($"{GetQuotedIdentifier(databaseType, columnName)} {columnOrder}, ");
             }
 
             sqlString.Length--;
@@ -297,25 +299,81 @@ namespace Datory
             return ReflectionUtils.GetTableColumns(typeof(T));
         }
 
+        public static void DropTable(DatabaseType databaseType, string connectionString, string tableName)
+        {
+            using (var connection = new Connection(databaseType, connectionString))
+            {
+                connection.Execute($"DROP TABLE {GetQuotedIdentifier(databaseType, tableName)}");
+            }
+        }
+
+        public static IDbConnection GetConnection(DatabaseType databaseType, string connectionString)
+        {
+            IDbConnection conn = null;
+
+            if (databaseType == DatabaseType.MySql)
+            {
+                conn = Database.MySql.Instance.GetConnection(connectionString);
+            }
+            else if (databaseType == DatabaseType.SqlServer)
+            {
+                conn = Database.SqlServer.Instance.GetConnection(connectionString);
+            }
+            else if (databaseType == DatabaseType.PostgreSql)
+            {
+                conn = Database.PostgreSql.Instance.GetConnection(connectionString);
+            }
+            else if (databaseType == DatabaseType.Oracle)
+            {
+                conn = Database.Oracle.Instance.GetConnection(connectionString);
+            }
+
+            return conn;
+        }
+
+        public static Compiler GetCompiler(DatabaseType databaseType, string connectionString)
+        {
+            Compiler compiler = null;
+
+            if (databaseType == DatabaseType.MySql)
+            {
+                compiler = Database.MySql.Instance.GetCompiler(connectionString);
+            }
+            else if (databaseType == DatabaseType.SqlServer)
+            {
+                compiler = Database.SqlServer.Instance.GetCompiler(connectionString);
+            }
+            else if (databaseType == DatabaseType.PostgreSql)
+            {
+                compiler = Database.PostgreSql.Instance.GetCompiler(connectionString);
+            }
+            else if (databaseType == DatabaseType.Oracle)
+            {
+                compiler = Database.Oracle.Instance.GetCompiler(connectionString);
+            }
+
+            return compiler;
+        }
+
         public static List<TableColumn> GetTableColumns(DatabaseType databaseType, string connectionString, string tableName)
         {
             List<TableColumn> list = null;
 
             if (databaseType == DatabaseType.MySql)
             {
-                list = SqlUtils.GetMySqlColumns(databaseType, connectionString, tableName);
+                list = Database.MySql.Instance.GetTableColumns(connectionString, tableName);
             }
             else if (databaseType == DatabaseType.SqlServer)
             {
-                list = SqlUtils.GetSqlServerColumns(databaseType, connectionString, tableName);
+                list = Database.SqlServer.Instance.GetTableColumns(connectionString, tableName);
             }
             else if (databaseType == DatabaseType.PostgreSql)
             {
-                list = SqlUtils.GetPostgreSqlColumns(databaseType, connectionString, tableName);
+                list = Database.PostgreSql.Instance.GetTableColumns(connectionString, tableName);
             }
             else if (databaseType == DatabaseType.Oracle)
             {
-                list = SqlUtils.GetOracleColumns(databaseType, connectionString, tableName);
+                list = Database.Oracle.Instance.GetTableColumns(connectionString, tableName);
             }
 
             return list;
@@ -323,45 +381,199 @@ namespace Datory
 
         public static List<string> GetTableNames(DatabaseType databaseType, string connectionString)
         {
-            IEnumerable<string> tableNames;
+            List<string> tableNames = null;
 
-            using (var connection = new Connection(databaseType, connectionString))
+            if (databaseType == DatabaseType.MySql)
             {
-                var sqlString = string.Empty;
-
-                if (databaseType == DatabaseType.MySql)
-                {
-                    sqlString = $"SELECT table_name FROM information_schema.tables WHERE table_schema='{connection.Database}' ORDER BY table_name";
-                }
-                else if (databaseType == DatabaseType.SqlServer)
-                {
-                    sqlString =
-                        $"SELECT name FROM [{connection.Database}]..sysobjects WHERE type = 'U' AND category<>2 ORDER BY Name";
-                }
-                else if (databaseType == DatabaseType.PostgreSql)
-                {
-                    sqlString =
-                        $"SELECT table_name FROM information_schema.tables WHERE table_catalog = '{connection.Database}' AND table_type = 'BASE TABLE' AND table_schema NOT IN ('pg_catalog', 'information_schema')";
-                }
-                else if (databaseType == DatabaseType.Oracle)
-                {
-                    sqlString = "select TABLE_NAME from user_tables";
-                }
-
-                if (string.IsNullOrEmpty(sqlString)) return new List<string>();
-
-                tableNames = connection.Query<string>(sqlString);
+                tableNames = Database.MySql.Instance.GetTableNames(connectionString);
+            }
+            else if (databaseType == DatabaseType.SqlServer)
+            {
+                tableNames = Database.SqlServer.Instance.GetTableNames(connectionString);
+            }
+            else if (databaseType == DatabaseType.PostgreSql)
+            {
+                tableNames = Database.PostgreSql.Instance.GetTableNames(connectionString);
+            }
+            else if (databaseType == DatabaseType.Oracle)
+            {
+                tableNames = Database.Oracle.Instance.GetTableNames(connectionString);
             }
 
-            return tableNames.Where(tableName => !string.IsNullOrEmpty(tableName)).ToList();
+            return tableNames;
         }
 
-        public static void DropTable(DatabaseType databaseType, string connectionString, string tableName)
+        public static string ColumnIncrement(DatabaseType databaseType, string columnName, int plusNum = 1)
         {
-            using (var connection = new Connection(databaseType, connectionString))
+            var retVal = string.Empty;
+
+            if (databaseType == DatabaseType.MySql)
             {
-                connection.Execute($"DROP TABLE {SqlUtils.GetQuotedIdentifier(databaseType, tableName)}");
+                retVal = Database.MySql.Instance.ColumnIncrement(columnName, plusNum);
             }
+            else if (databaseType == DatabaseType.SqlServer)
+            {
+                retVal = Database.SqlServer.Instance.ColumnIncrement(columnName, plusNum);
+            }
+            else if (databaseType == DatabaseType.PostgreSql)
+            {
+                retVal = Database.PostgreSql.Instance.ColumnIncrement(columnName, plusNum);
+            }
+            else if (databaseType == DatabaseType.Oracle)
+            {
+                retVal = Database.Oracle.Instance.ColumnIncrement(columnName, plusNum);
+            }
+
+            return retVal;
+        }
+
+        public static string ColumnDecrement(DatabaseType databaseType, string columnName, int minusNum = 1)
+        {
+            var retVal = string.Empty;
+
+            if (databaseType == DatabaseType.MySql)
+            {
+                retVal = Database.MySql.Instance.ColumnDecrement(columnName, minusNum);
+            }
+            else if (databaseType == DatabaseType.SqlServer)
+            {
+                retVal = Database.SqlServer.Instance.ColumnDecrement(columnName, minusNum);
+            }
+            else if (databaseType == DatabaseType.PostgreSql)
+            {
+                retVal = Database.PostgreSql.Instance.ColumnDecrement(columnName, minusNum);
+            }
+            else if (databaseType == DatabaseType.Oracle)
+            {
+                retVal = Database.Oracle.Instance.ColumnDecrement(columnName, minusNum);
+            }
+
+            return retVal;
+        }
+
+        public static string GetAutoIncrementDataType(DatabaseType databaseType, bool alterTable = false)
+        {
+            var retVal = string.Empty;
+
+            if (databaseType == DatabaseType.MySql)
+            {
+                retVal = Database.MySql.Instance.GetAutoIncrementDataType(alterTable);
+            }
+            else if (databaseType == DatabaseType.SqlServer)
+            {
+                retVal = Database.SqlServer.Instance.GetAutoIncrementDataType(alterTable);
+            }
+            else if (databaseType == DatabaseType.PostgreSql)
+            {
+                retVal = Database.PostgreSql.Instance.GetAutoIncrementDataType(alterTable);
+            }
+            else if (databaseType == DatabaseType.Oracle)
+            {
+                retVal = Database.Oracle.Instance.GetAutoIncrementDataType(alterTable);
+            }
+
+            return retVal;
+        }
+
+        public static string GetColumnSqlString(DatabaseType databaseType, TableColumn tableColumn)
+        {
+            var retVal = string.Empty;
+
+            if (databaseType == DatabaseType.MySql)
+            {
+                retVal = Database.MySql.Instance.GetColumnSqlString(tableColumn);
+            }
+            else if (databaseType == DatabaseType.SqlServer)
+            {
+                retVal = Database.SqlServer.Instance.GetColumnSqlString(tableColumn);
+            }
+            else if (databaseType == DatabaseType.PostgreSql)
+            {
+                retVal = Database.PostgreSql.Instance.GetColumnSqlString(tableColumn);
+            }
+            else if (databaseType == DatabaseType.Oracle)
+            {
+                retVal = Database.Oracle.Instance.GetColumnSqlString(tableColumn);
+            }
+
+            return retVal;
+        }
+
+        public static string GetPrimaryKeySqlString(DatabaseType databaseType, string tableName, string attributeName)
+        {
+            var retVal = string.Empty;
+
+            if (databaseType == DatabaseType.MySql)
+            {
+                retVal = Database.MySql.Instance.GetPrimaryKeySqlString(tableName, attributeName);
+            }
+            else if (databaseType == DatabaseType.SqlServer)
+            {
+                retVal = Database.SqlServer.Instance.GetPrimaryKeySqlString(tableName, attributeName);
+            }
+            else if (databaseType == DatabaseType.PostgreSql)
+            {
+                retVal = Database.PostgreSql.Instance.GetPrimaryKeySqlString(tableName, attributeName);
+            }
+            else if (databaseType == DatabaseType.Oracle)
+            {
+                retVal = Database.Oracle.Instance.GetPrimaryKeySqlString(tableName, attributeName);
+            }
+
+            return retVal;
+        }
+
+        public static string GetQuotedIdentifier(DatabaseType databaseType, string identifier)
+        {
+            var retVal = string.Empty;
+
+            if (databaseType == DatabaseType.MySql)
+            {
+                retVal = Database.MySql.Instance.GetQuotedIdentifier(identifier);
+            }
+            else if (databaseType == DatabaseType.SqlServer)
+            {
+                retVal = Database.SqlServer.Instance.GetQuotedIdentifier(identifier);
+            }
+            else if (databaseType == DatabaseType.PostgreSql)
+            {
+                retVal = Database.PostgreSql.Instance.GetQuotedIdentifier(identifier);
+            }
+            else if (databaseType == DatabaseType.Oracle)
+            {
+                retVal = Database.Oracle.Instance.GetQuotedIdentifier(identifier);
+            }
+
+            return retVal;
+        }
+
+        public static string GetAddColumnsSqlString(DatabaseType databaseType, string tableName, string columnsSqlString)
+        {
+            var retVal = string.Empty;
+
+            if (databaseType == DatabaseType.MySql)
+            {
+                retVal = Database.MySql.Instance.GetAddColumnsSqlString(tableName, columnsSqlString);
+            }
+            else if (databaseType == DatabaseType.SqlServer)
+            {
+                retVal = Database.SqlServer.Instance.GetAddColumnsSqlString(tableName, columnsSqlString);
+            }
+            else if (databaseType == DatabaseType.PostgreSql)
+            {
+                retVal = Database.PostgreSql.Instance.GetAddColumnsSqlString(tableName, columnsSqlString);
+            }
+            else if (databaseType == DatabaseType.Oracle)
+            {
+                retVal = Database.Oracle.Instance.GetAddColumnsSqlString(tableName, columnsSqlString);
+            }
+
+            return retVal;
+        }
+
+        public static string GetDropColumnsSqlString(DatabaseType databaseType, string tableName, string columnName)
+        {
+            return $"ALTER TABLE {GetQuotedIdentifier(databaseType, tableName)} DROP COLUMN {GetQuotedIdentifier(databaseType, columnName)}";
         }
     }
 }

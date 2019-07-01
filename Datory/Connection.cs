@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using Datory.Database;
 using Datory.Utils;
 
 namespace Datory
@@ -8,12 +9,16 @@ namespace Datory
     {
         private readonly IDbConnection _dbConnection;
         public DatabaseType DatabaseType { get; }
+        public string ConnectionString { get; set; }
+        public int ConnectionTimeout => _dbConnection.ConnectionTimeout;
+        public string Database => _dbConnection.Database;
+        public ConnectionState State => _dbConnection.State;
 
         public Connection(DatabaseType databaseType, string connectionString)
         {
             DatabaseType = databaseType;
             ConnectionString = connectionString;
-            _dbConnection = SqlUtils.GetConnection(databaseType, connectionString);
+            _dbConnection = DatoryUtils.GetConnection(databaseType, connectionString);
         }
 
         public IDbTransaction BeginTransaction()
@@ -45,13 +50,6 @@ namespace Datory
         {
             _dbConnection.Open();
         }
-
-        public string ConnectionString { get; set; }
-        public int ConnectionTimeout => _dbConnection.ConnectionTimeout;
-
-        public string Database => _dbConnection.Database;
-
-        public ConnectionState State => _dbConnection.State;
 
         public void Dispose()
         {
