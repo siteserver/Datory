@@ -1,9 +1,23 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
-VisualStudioVersion = 16.0.29009.5
+VisualStudioVersion = 16.0.28803.352
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Datory", "Datory\Datory.csproj", "{A4F99E03-E866-49A8-9C44-5C96CEABC47E}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{CA84A415-DF00-4499-A537-3BD3F0A7588D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{DBF48143-87FE-456A-98DE-13A7E2154B33}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2665ABBF-D294-487E-A9AD-A9BA4B75CB30}"
+	ProjectSection(SolutionItems) = preProject
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		LICENSE = LICENSE
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Datory", "src\Datory\Datory.csproj", "{7E1C1565-9102-4E7E-AF16-9924EC5E725E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Datory.Tests", "tests\Datory.Tests\Datory.Tests.csproj", "{3EBA206E-89E2-4228-B4BD-3220D9F9A699}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,15 +25,23 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{A4F99E03-E866-49A8-9C44-5C96CEABC47E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A4F99E03-E866-49A8-9C44-5C96CEABC47E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A4F99E03-E866-49A8-9C44-5C96CEABC47E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A4F99E03-E866-49A8-9C44-5C96CEABC47E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7E1C1565-9102-4E7E-AF16-9924EC5E725E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7E1C1565-9102-4E7E-AF16-9924EC5E725E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7E1C1565-9102-4E7E-AF16-9924EC5E725E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7E1C1565-9102-4E7E-AF16-9924EC5E725E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3EBA206E-89E2-4228-B4BD-3220D9F9A699}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3EBA206E-89E2-4228-B4BD-3220D9F9A699}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3EBA206E-89E2-4228-B4BD-3220D9F9A699}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3EBA206E-89E2-4228-B4BD-3220D9F9A699}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7E1C1565-9102-4E7E-AF16-9924EC5E725E} = {CA84A415-DF00-4499-A537-3BD3F0A7588D}
+		{3EBA206E-89E2-4228-B4BD-3220D9F9A699} = {DBF48143-87FE-456A-98DE-13A7E2154B33}
+	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {60B1DF86-5E35-42B0-B6A4-BFE489EE2CA4}
+		SolutionGuid = {8990A474-798A-4121-A8AF-DBA1E78DB839}
 	EndGlobalSection
 EndGlobal
