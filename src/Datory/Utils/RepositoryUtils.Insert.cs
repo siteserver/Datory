@@ -19,10 +19,25 @@ namespace Datory.Utils
             dataInfo.CreatedDate = DateTime.UtcNow;
             dataInfo.LastModifiedDate = DateTime.UtcNow;
 
+            var isIdentityColumn = false;
+
             var dictionary = new Dictionary<string, object>();
             foreach (var tableColumn in tableColumns)
             {
-                if (Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.Id))) continue;
+                if (Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.Id)))
+                {
+                    if (dataInfo.Id > 0)
+                    {
+                        if (database.DatabaseType == DatabaseType.SqlServer)
+                        {
+                            isIdentityColumn = true;
+                        }
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
 
                 var value = tableColumn.IsExtend
                     ? dataInfo.GetExtendColumnValue()
@@ -34,6 +49,15 @@ namespace Datory.Utils
             var xQuery = NewQuery(tableName);
             xQuery.AsInsert(dictionary, true);
             var (sql, bindings) = Compile(database, tableName, xQuery);
+
+            if (isIdentityColumn)
+            {
+                sql = $@"
+SET IDENTITY_INSERT {tableName} ON
+{sql}
+SET IDENTITY_INSERT {tableName} OFF
+";
+            }
 
             using (var connection = database.GetConnection())
             {
