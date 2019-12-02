@@ -10,7 +10,7 @@ using Newtonsoft.Json.Serialization;
 
 namespace Datory.Utils
 {
-    internal static class Utilities
+    public static class Utilities
     {
         private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
         {
@@ -34,7 +34,7 @@ namespace Datory.Utils
             }
         }
 
-        private static T JsonDeserialize<T>(string json, T defaultValue = default(T))
+        public static T JsonDeserialize<T>(string json, T defaultValue = default(T))
         {
             try
             {
@@ -180,8 +180,15 @@ namespace Datory.Utils
             return list.Any(element => EqualsIgnoreCase(element, target));
         }
 
-        public static string GetConnectionStringDatabase(string connectionString)
+        public static string GetConnectionStringDatabase(DatabaseType databaseType, string connectionString)
         {
+            if (databaseType == DatabaseType.Oracle)
+            {
+                var index1 = connectionString.IndexOf("SERVICE_NAME=", StringComparison.Ordinal);
+                var index2 = connectionString.IndexOf(")));", StringComparison.Ordinal);
+                return connectionString.Substring(index1 + 13, index2 - index1 - 13);
+            }
+
             foreach (var pair in StringCollectionToStringList(connectionString, ';'))
             {
                 if (string.IsNullOrEmpty(pair) || pair.IndexOf("=", StringComparison.Ordinal) == -1) continue;
@@ -214,6 +221,36 @@ namespace Datory.Utils
             }
 
             return string.Empty;
+        }
+
+        public static T ToEnum<T>(string value, T defaultValue) where T : struct
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return defaultValue;
+            }
+
+            return Enum.TryParse<T>(value, true, out var result) ? result : defaultValue;
+        }
+
+        public static string ReplaceEndsWith(string input, string replace, string to)
+        {
+            var retVal = input;
+            if (!string.IsNullOrEmpty(input) && !string.IsNullOrEmpty(replace) && input.EndsWith(replace))
+            {
+                retVal = input.Substring(0, input.Length - replace.Length) + to;
+            }
+            return retVal;
+        }
+
+        public static string ReplaceEndsWithIgnoreCase(string input, string replace, string to)
+        {
+            var retVal = input;
+            if (!string.IsNullOrEmpty(input) && !string.IsNullOrEmpty(replace) && input.ToLower().EndsWith(replace.ToLower()))
+            {
+                retVal = input.Substring(0, input.Length - replace.Length) + to;
+            }
+            return retVal;
         }
     }
 }

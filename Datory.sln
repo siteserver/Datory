@@ -1,5 +1,4 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.28803.352
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -19,6 +18,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Datory", "src\Datory\Datory
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Datory.Tests", "tests\Datory.Tests\Datory.Tests.csproj", "{3EBA206E-89E2-4228-B4BD-3220D9F9A699}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Datory.Cli", "src\Datory.Cli\Datory.Cli.csproj", "{510C424A-7CDB-4D2D-B5B0-A3A99C8F8A89}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Datory.Cli.Tests", "tests\Datory.Cli.Tests\Datory.Cli.Tests.csproj", "{C544A86A-CDBA-4697-ACAC-AEA02365709F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +36,14 @@ Global
 		{3EBA206E-89E2-4228-B4BD-3220D9F9A699}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3EBA206E-89E2-4228-B4BD-3220D9F9A699}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3EBA206E-89E2-4228-B4BD-3220D9F9A699}.Release|Any CPU.Build.0 = Release|Any CPU
+		{510C424A-7CDB-4D2D-B5B0-A3A99C8F8A89}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{510C424A-7CDB-4D2D-B5B0-A3A99C8F8A89}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{510C424A-7CDB-4D2D-B5B0-A3A99C8F8A89}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{510C424A-7CDB-4D2D-B5B0-A3A99C8F8A89}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C544A86A-CDBA-4697-ACAC-AEA02365709F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C544A86A-CDBA-4697-ACAC-AEA02365709F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C544A86A-CDBA-4697-ACAC-AEA02365709F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C544A86A-CDBA-4697-ACAC-AEA02365709F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -40,6 +51,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{7E1C1565-9102-4E7E-AF16-9924EC5E725E} = {CA84A415-DF00-4499-A537-3BD3F0A7588D}
 		{3EBA206E-89E2-4228-B4BD-3220D9F9A699} = {DBF48143-87FE-456A-98DE-13A7E2154B33}
+		{510C424A-7CDB-4D2D-B5B0-A3A99C8F8A89} = {CA84A415-DF00-4499-A537-3BD3F0A7588D}
+		{C544A86A-CDBA-4697-ACAC-AEA02365709F} = {DBF48143-87FE-456A-98DE-13A7E2154B33}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8990A474-798A-4121-A8AF-DBA1E78DB839}

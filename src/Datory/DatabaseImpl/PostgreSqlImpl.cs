@@ -46,15 +46,13 @@ namespace Datory.DatabaseImpl
 
             using (var connection = GetConnection(connectionString))
             {
-                using (var rdr = await connection.ExecuteReaderAsync("select datname from pg_database where datistemplate = false order by datname asc"))
+                using var rdr = await connection.ExecuteReaderAsync("select datname from pg_database where datistemplate = false order by datname asc");
+                while (rdr.Read())
                 {
-                    while (rdr.Read())
-                    {
-                        var dbName = rdr["datname"] as string;
-                        if (dbName == null) continue;
+                    var dbName = rdr["datname"] as string;
+                    if (dbName == null) continue;
 
-                        databaseNames.Add(dbName);
-                    }
+                    databaseNames.Add(dbName);
                 }
             }
 
@@ -63,7 +61,7 @@ namespace Datory.DatabaseImpl
 
         public async Task<IList<string>> GetTableNamesAsync(string connectionString)
         {
-            IEnumerable<string> tableNames = null;
+            IEnumerable<string> tableNames;
 
             using (var connection = GetConnection(connectionString))
             {

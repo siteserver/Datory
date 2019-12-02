@@ -52,12 +52,10 @@ namespace Datory.DatabaseImpl
             try
             {
                 var db = new Database(DatabaseType.SqlServer, connectionString);
-                using (var connection = db.GetConnection())
-                {
-                    var version = connection.ExecuteScalar<string>(sqlString);
+                using var connection = db.GetConnection();
+                var version = connection.ExecuteScalar<string>(sqlString);
 
-                    useLegacyPagination = Utilities.ToDecimal(version) < 11;
-                }
+                useLegacyPagination = Utilities.ToDecimal(version) < 11;
             }
             catch
             {

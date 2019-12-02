@@ -4,6 +4,6 @@ namespace Datory.Tests.Utils
 {
     public static class TestEnv
     {
-        public static bool IsTestMachine => Environment.MachineName == "DESKTOP-7S7SBTS";
+        public static bool IsTestMachine => Environment.MachineName == "DESKTOP-PL0AATC";
     }
 }

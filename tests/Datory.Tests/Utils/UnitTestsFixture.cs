@@ -1,11 +1,18 @@
 ﻿using System.IO;
+using System.Threading.Tasks;
+using Datory.Cli.Abstractions;
+using Datory.Cli.Core;
+using Datory.Tests.Mocks;
 using Microsoft.Extensions.Configuration;
+using Xunit;
 
 namespace Datory.Tests.Utils
 {
-    public class UnitTestsFixture
+    // https://mderriey.com/2017/09/04/async-lifetime-with-xunit/
+    public class UnitTestsFixture : IAsyncLifetime
     {
-        public IConfigurationRoot Config { get; set; }
+        public IDatabase Database => _settings.Database;
+        private readonly ISettings _settings;
 
         public UnitTestsFixture()
         {
@@ -13,10 +20,33 @@ namespace Datory.Tests.Utils
 
             var config = new ConfigurationBuilder()
                 .SetBasePath(contentRootPath)
-                .AddJsonFile("ss.json")
+                .AddJsonFile("config.json")
                 .Build();
 
-            Config = config;
+            _settings = new Settings(config, contentRootPath);
+        }
+
+        public async Task InitializeAsync()
+        {
+            if (!TestEnv.IsTestMachine) return;
+
+            var repository = new Repository<TestTableInfo>(Database);
+            var isExists = await Database.IsTableExistsAsync(repository.TableName);
+            if (isExists)
+            {
+                await Database.DropTableAsync(repository.TableName);
+            }
+
+            await Database.CreateTableAsync(repository.TableName, repository.TableColumns);
+        }
+
+        public async Task DisposeAsync()
+        {
+            var tableNames = await Database.GetTableNamesAsync();
+            foreach (var tableName in tableNames)
+            {
+                await Database.DropTableAsync(tableName);
+            }
         }
     }
 }

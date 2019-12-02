@@ -16,7 +16,7 @@ namespace Datory
     {
         public Database(DatabaseType databaseType, string connectionString)
         {
-            if (databaseType == null || connectionString == null) return;
+            if (connectionString == null) return;
 
             if (databaseType == DatabaseType.MySql)
             {
@@ -58,7 +58,7 @@ namespace Datory
 
         public string ConnectionString { get; }
 
-        public string DatabaseName => Utilities.GetConnectionStringDatabase(ConnectionString);
+        public string DatabaseName => Utilities.GetConnectionStringDatabase(DatabaseType, ConnectionString);
 
         public DbConnection GetConnection()
         {
@@ -109,28 +109,22 @@ namespace Datory
                     var userName = Utilities.GetConnectionStringUserName(ConnectionString);
                     var sql = $"SELECT COUNT(*) FROM ALL_OBJECTS WHERE OBJECT_TYPE = 'TABLE' AND OWNER = '{userName.ToUpper()}' and OBJECT_NAME = '{tableName}'";
 
-                    using (var connection = GetConnection())
-                    {
-                        exists = await connection.ExecuteScalarAsync<int>(sql) == 1;
-                    }
+                    using var connection = GetConnection();
+                    exists = await connection.ExecuteScalarAsync<int>(sql) == 1;
                 }
                 else if (DatabaseType == DatabaseType.SQLite)
                 {
                     var sql = $"SELECT count(*) FROM sqlite_master WHERE type='table' AND name='{tableName}'";
 
-                    using (var connection = GetConnection())
-                    {
-                        exists = await connection.ExecuteScalarAsync<int>(sql) == 1;
-                    }
+                    using var connection = GetConnection();
+                    exists = await connection.ExecuteScalarAsync<int>(sql) == 1;
                 }
                 else // ANSI SQL way.  Works in PostgreSQL, MSSQL, MySQL.  
                 {
                     var sql = $"select case when exists((select * from information_schema.tables where table_name = '{tableName}')) then 1 else 0 end";
 
-                    using (var connection = GetConnection())
-                    {
-                        exists = await connection.ExecuteScalarAsync<int>(sql) == 1;
-                    }
+                    using var connection = GetConnection();
+                    exists = await connection.ExecuteScalarAsync<int>(sql) == 1;
                 }
             }
             catch
@@ -139,10 +133,8 @@ namespace Datory
                 {
                     var sql = $"select 1 from {tableName} where 1 = 0";
 
-                    using (var connection = GetConnection())
-                    {
-                        exists = await connection.ExecuteScalarAsync<int>(sql) == 1;
-                    }
+                    using var connection = GetConnection();
+                    exists = await connection.ExecuteScalarAsync<int>(sql) == 1;
                 }
                 catch
                 {
@@ -153,20 +145,18 @@ namespace Datory
             return exists;
         }
 
-        public (bool IsConnectionWorks, string ErrorMessage) IsConnectionWorks()
+        public async Task<(bool IsConnectionWorks, string ErrorMessage)> IsConnectionWorksAsync()
         {
-            var retval = false;
+            var retVal = false;
             var errorMessage = string.Empty;
             try
             {
-                using (var connection = GetConnection())
+                using var connection = GetConnection();
+                await connection.OpenAsync();
+                if (connection.State == ConnectionState.Open)
                 {
-                    connection.Open();
-                    if (connection.State == ConnectionState.Open)
-                    {
-                        retval = true;
-                        connection.Close();
-                    }
+                    retVal = true;
+                    connection.Close();
                 }
             }
             catch (Exception ex)
@@ -174,7 +164,7 @@ namespace Datory
                 errorMessage = ex.Message;
             }
 
-            return (retval, errorMessage);
+            return (retVal, errorMessage);
         }
 
         public async Task<string> AddIdentityColumnIdIfNotExistsAsync(string tableName, IList<TableColumn> columns)
@@ -247,10 +237,8 @@ namespace Datory
 
             foreach (var sqlString in list)
             {
-                using (var connection = GetConnection())
-                {
-                    connection.Execute(sqlString);
-                }
+                using var connection = GetConnection();
+                connection.Execute(sqlString);
             }
         }
 
@@ -341,10 +329,8 @@ namespace Datory
                 ? ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
                 : ")");
 
-            using (var connection = GetConnection())
-            {
-                await connection.ExecuteAsync(sqlBuilder.ToString());
-            }
+            using var connection = GetConnection();
+            await connection.ExecuteAsync(sqlBuilder.ToString());
         }
 
         public async Task CreateIndexAsync(string tableName, string indexName, params string[] columns)
@@ -371,10 +357,8 @@ namespace Datory
             sqlString.Length -= 2;
             sqlString.Append(")");
 
-            using (var connection = GetConnection())
-            {
-                await connection.ExecuteAsync(sqlString.ToString());
-            }
+            using var connection = GetConnection();
+            await connection.ExecuteAsync(sqlString.ToString());
         }
 
         public async Task<List<string>> GetColumnNamesAsync(string tableName)
@@ -395,10 +379,8 @@ namespace Datory
 
         public async Task DropTableAsync(string tableName)
         {
-            using (var connection = GetConnection())
-            {
-                await connection.ExecuteAsync($"DROP TABLE {DbUtils.GetQuotedIdentifier(DatabaseType, tableName)}");
-            }
+            using var connection = GetConnection();
+            await connection.ExecuteAsync($"DROP TABLE {DbUtils.GetQuotedIdentifier(DatabaseType, tableName)}");
         }
 
         public async Task<IList<TableColumn>> GetTableColumnsAsync(string tableName)

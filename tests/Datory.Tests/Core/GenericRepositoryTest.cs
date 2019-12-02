@@ -20,19 +20,7 @@ namespace Datory.Tests.Core
         public GenericRepositoryTest(UnitTestsFixture fixture, ITestOutputHelper output)
         {
             _output = output;
-
-            var db = new Database(DatabaseType.SQLite, fixture.Config.GetConnectionString("ConnectionString"));
-            _repository = new Repository<TestTableInfo>(db);
-
-            if (!TestEnv.IsTestMachine) return;
-
-            var isExists = db.IsTableExistsAsync(_repository.TableName).GetAwaiter().GetResult();
-            if (isExists)
-            {
-                db.DropTableAsync(_repository.TableName).GetAwaiter().GetResult();
-            }
-
-            db.CreateTableAsync(_repository.TableName, _repository.TableColumns).GetAwaiter().GetResult();
+            _repository = new Repository<TestTableInfo>(fixture.Database);
         }
 
         public void Dispose()
@@ -234,7 +222,7 @@ namespace Datory.Tests.Core
             });
 
             var count = await _repository.CountAsync();
-            Assert.Equal(2, count);
+            Assert.Equal(4, count);
 
             count = await _repository.CountAsync(new Query().Where("TypeVarChar100", "test"));
             Assert.Equal(1, count);

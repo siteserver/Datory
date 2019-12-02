@@ -16,10 +16,8 @@ namespace Datory.Utils
             xQuery.ClearComponent("select").SelectRaw("COUNT(1)").ClearComponent("order");
             var (sql, bindings) = Compile(database, tableName, xQuery);
 
-            using (var connection = database.GetConnection())
-            {
-                return await connection.ExecuteScalarAsync<bool>(sql, bindings);
-            }
+            using var connection = database.GetConnection();
+            return await connection.ExecuteScalarAsync<bool>(sql, bindings);
         }
 
         public static async Task<int> CountAsync(IDatabase database, string tableName, Query query = null)
@@ -28,10 +26,8 @@ namespace Datory.Utils
             xQuery.ClearComponent("order").AsCount();
             var (sql, bindings) = Compile(database, tableName, xQuery);
 
-            using (var connection = database.GetConnection())
-            {
-                return await connection.ExecuteScalarAsync<int>(sql, bindings);
-            }
+            using var connection = database.GetConnection();
+            return await connection.ExecuteScalarAsync<int>(sql, bindings);
         }
 
         public static async Task<int> SumAsync(IDatabase database, string tableName, string columnName, Query query = null)
@@ -41,10 +37,8 @@ namespace Datory.Utils
             xQuery.AsSum(columnName);
             var (sql, bindings) = Compile(database, tableName, xQuery);
 
-            using (var connection = database.GetConnection())
-            {
-                return await connection.ExecuteScalarAsync<int>(sql, bindings);
-            }
+            using var connection = database.GetConnection();
+            return await connection.ExecuteScalarAsync<int>(sql, bindings);
         }
 
         public static async Task<TValue> GetValueAsync<TValue>(IDatabase database, string tableName, Query query)
@@ -55,10 +49,8 @@ namespace Datory.Utils
             xQuery.Limit(1);
             var (sql, bindings) = Compile(database, tableName, xQuery);
 
-            using (var connection = database.GetConnection())
-            {
-                return await connection.QueryFirstOrDefaultAsync<TValue>(sql, bindings);
-            }
+            using var connection = database.GetConnection();
+            return await connection.QueryFirstOrDefaultAsync<TValue>(sql, bindings);
         }
 
         public static async Task<IEnumerable<TValue>> GetValueListAsync<TValue>(IDatabase database, string tableName, Query query = null)
@@ -66,10 +58,8 @@ namespace Datory.Utils
             var xQuery = NewQuery(tableName, query);
             var (sql, bindings) = Compile(database, tableName, xQuery);
 
-            using (var connection = database.GetConnection())
-            {
-                return await connection.QueryAsync<TValue>(sql, bindings);
-            }
+            using var connection = database.GetConnection();
+            return await connection.QueryAsync<TValue>(sql, bindings);
         }
 
         public static async Task<int?> MaxAsync(IDatabase database, string tableName, string columnName, Query query = null)
@@ -79,10 +69,8 @@ namespace Datory.Utils
             xQuery.AsMax(columnName);
             var (sql, bindings) = Compile(database, tableName, xQuery);
 
-            using (var connection = database.GetConnection())
-            {
-                return await connection.QueryFirstOrDefaultAsync<int?>(sql, bindings);
-            }
+            using var connection = database.GetConnection();
+            return await connection.QueryFirstOrDefaultAsync<int?>(sql, bindings);
         }
 
         public static async Task<T> GetObjectAsync<T>(IDatabase database, string tableName, Query query = null) where T : Entity

@@ -1,9 +1,24 @@
-﻿using Xunit;
+﻿using System;
+using Xunit;
+using Xunit.Abstractions;
 
 namespace Datory.Tests.Utils
 {
     public class TestStringUtils
     {
+        private readonly ITestOutputHelper _testOutputHelper;
+
+        public TestStringUtils(ITestOutputHelper testOutputHelper)
+        {
+            _testOutputHelper = testOutputHelper;
+        }
+
+        [Fact]
+        public void TestWriteEnvironment()
+        {
+            _testOutputHelper.WriteLine(Environment.MachineName);
+        }
+
         [Fact]
         public void TestReplaceEndsWith()
         {

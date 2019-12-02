@@ -5,3 +5,5 @@ Datory - 基于 [Dapper](https://github.com/StackExchange/Dapper) 及 [SqlKata](
 ```
 Install-Package Datory
 ```
+
+dotnet publish src/Datory.Cli -c Release --self-contained -o ./publish

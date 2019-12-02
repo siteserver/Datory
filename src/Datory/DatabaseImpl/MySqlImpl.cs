@@ -47,21 +47,19 @@ namespace Datory.DatabaseImpl
 
             using (var connection = GetConnection(connectionString))
             {
-                using (var rdr = await connection.ExecuteReaderAsync("show databases"))
+                using var rdr = await connection.ExecuteReaderAsync("show databases");
+                while (rdr.Read())
                 {
-                    while (rdr.Read())
+                    var dbName = rdr.GetString(0);
+                    if (dbName == null) continue;
+                    if (dbName != "information_schema" &&
+                        dbName != "mysql" &&
+                        dbName != "performance_schema" &&
+                        dbName != "sakila" &&
+                        dbName != "sys" &&
+                        dbName != "world")
                     {
-                        var dbName = rdr.GetString(0);
-                        if (dbName == null) continue;
-                        if (dbName != "information_schema" &&
-                            dbName != "mysql" &&
-                            dbName != "performance_schema" &&
-                            dbName != "sakila" &&
-                            dbName != "sys" &&
-                            dbName != "world")
-                        {
-                            databaseNames.Add(dbName);
-                        }
+                        databaseNames.Add(dbName);
                     }
                 }
             }
@@ -190,28 +188,26 @@ namespace Datory.DatabaseImpl
                 var sqlString =
                     $"select COLUMN_NAME AS ColumnName, DATA_TYPE AS DataType, CHARACTER_MAXIMUM_LENGTH AS DataLength, COLUMN_KEY AS ColumnKey, EXTRA AS Extra from information_schema.columns where table_schema = '{connection.Database}' and table_name = '{tableName}' order by table_name,ordinal_position; ";
 
-                using (var rdr = await connection.ExecuteReaderAsync(sqlString))
+                using var rdr = await connection.ExecuteReaderAsync(sqlString);
+                while (rdr.Read())
                 {
-                    while (rdr.Read())
-                    {
-                        var columnName = rdr.IsDBNull(0) ? string.Empty : rdr.GetString(0);
-                        var dataType = ToDataType(rdr.IsDBNull(1) ? string.Empty : rdr.GetString(1));
-                        var length = rdr.IsDBNull(2) || dataType == DataType.Text ? 0 : Convert.ToInt32(rdr.GetValue(2));
-                        var isPrimaryKey = Convert.ToString(rdr.GetValue(3)) == "PRI";
-                        var isIdentity = Convert.ToString(rdr.GetValue(4)) == "auto_increment";
+                    var columnName = rdr.IsDBNull(0) ? string.Empty : rdr.GetString(0);
+                    var dataType = ToDataType(rdr.IsDBNull(1) ? string.Empty : rdr.GetString(1));
+                    var length = rdr.IsDBNull(2) || dataType == DataType.Text ? 0 : Convert.ToInt32(rdr.GetValue(2));
+                    var isPrimaryKey = Convert.ToString(rdr.GetValue(3)) == "PRI";
+                    var isIdentity = Convert.ToString(rdr.GetValue(4)) == "auto_increment";
 
-                        var info = new TableColumn
-                        {
-                            AttributeName = columnName,
-                            DataType = dataType,
-                            DataLength = length,
-                            IsPrimaryKey = isPrimaryKey,
-                            IsIdentity = isIdentity
-                        };
-                        list.Add(info);
-                    }
-                    rdr.Close();
+                    var info = new TableColumn
+                    {
+                        AttributeName = columnName,
+                        DataType = dataType,
+                        DataLength = length,
+                        IsPrimaryKey = isPrimaryKey,
+                        IsIdentity = isIdentity
+                    };
+                    list.Add(info);
                 }
+                rdr.Close();
             }
 
             //var columns = database.Connection.Query<dynamic>(sqlString);

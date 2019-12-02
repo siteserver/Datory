@@ -38,10 +38,8 @@ namespace Datory.Utils
 
             var (sql, bindings) = Compile(database, tableName, xQuery);
 
-            using (var connection = database.GetConnection())
-            {
-                return await connection.ExecuteAsync(sql, bindings);
-            }
+            using var connection = database.GetConnection();
+            return await connection.ExecuteAsync(sql, bindings);
         }
 
         public static async Task<int> IncrementAllAsync(IDatabase database, string tableName, string columnName, Query query, int num = 1)

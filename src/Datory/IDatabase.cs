@@ -38,6 +38,6 @@ namespace Datory
 
         Task<IList<string>> GetTableNamesAsync();
 
-        (bool IsConnectionWorks, string ErrorMessage) IsConnectionWorks();
+        Task<(bool IsConnectionWorks, string ErrorMessage)> IsConnectionWorksAsync();
     }
 }

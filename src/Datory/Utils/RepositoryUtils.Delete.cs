@@ -29,10 +29,8 @@ namespace Datory.Utils
 
             var (sql, bindings) = Compile(database, tableName, xQuery);
 
-            using (var connection = database.GetConnection())
-            {
-                return await connection.ExecuteAsync(sql, bindings);
-            }
+            using var connection = database.GetConnection();
+            return await connection.ExecuteAsync(sql, bindings);
         }
     }
 }
