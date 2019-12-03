@@ -66,9 +66,9 @@ namespace Datory.Cli
 
             Jobs = new Dictionary<string, Func<IJobContext, Task>>(StringComparer.CurrentCultureIgnoreCase)
             {
-                {BackupJob.CommandName, BackupJob.Execute},
-                {RestoreJob.CommandName, RestoreJob.Execute},
-                {TestJob.CommandName, TestJob.Execute}
+                {BackupJob.CommandName, BackupJob.ExecuteAsync},
+                {RestoreJob.CommandName, RestoreJob.ExecuteAsync},
+                {TestJob.CommandName, TestJob.ExecuteAsync}
             };
 
             // PluginManager.LoadPlugins(CliUtils.PhysicalApplicationPath);

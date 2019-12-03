@@ -16,6 +16,13 @@ namespace Datory.Cli.Core
             Database = new Database(Utilities.ToEnum(_config.GetValue<string>("Database:Type"), DatabaseType.MySql), _config.GetValue<string>("Database:ConnectionString"));
             Includes = Utilities.JsonDeserialize<List<string>>(_config.GetValue<string>("Tables:Includes"));
             Excludes = Utilities.JsonDeserialize<List<string>>(_config.GetValue<string>("Tables:Excludes"));
+
+            if (Includes == null) {
+                Includes = new List<string>();
+            }
+            if (Excludes == null) {
+                Excludes = new List<string>();
+            }
         }
 
         public string ContentRootPath { get; }

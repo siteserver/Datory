@@ -12,7 +12,7 @@ namespace Datory.Cli.Tasks
     {
         public const string CommandName = "test add";
 
-        public static async Task Execute(IJobContext context)
+        public static async Task ExecuteAsync(IJobContext context)
         {
             var application = CliUtils.Provider.GetService<TestJob>();
             await application.RunAsync(context);

@@ -16,7 +16,7 @@ namespace Datory.Cli.Tasks
     {
         public const string CommandName = "backup";
 
-        public static async Task Execute(IJobContext context)
+        public static async Task ExecuteAsync(IJobContext context)
         {
             var application = CliUtils.Provider.GetService<BackupJob>();
             await application.RunAsync(context);

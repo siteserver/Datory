@@ -19,7 +19,7 @@ namespace Datory.Cli.Tasks
     {
         public const string CommandName = "restore";
 
-        public static async Task Execute(IJobContext context)
+        public static async Task ExecuteAsync(IJobContext context)
         {
             var application = CliUtils.Provider.GetService<RestoreJob>();
             await application.RunAsync(context);

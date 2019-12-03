@@ -39,6 +39,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Datory.Cli\Datory.Cli.csproj" />
     <ProjectReference Include="..\..\src\Datory\Datory.csproj" />
+    <ProjectReference Include="..\Datory.Tests\Datory.Tests.csproj" />
   </ItemGroup>
 
 </Project>
