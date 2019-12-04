@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Dapper;
+using Microsoft.Extensions.Caching.Distributed;
 using SqlKata;
 
 [assembly: InternalsVisibleTo("Datory.Data.Tests")]
@@ -10,7 +11,7 @@ namespace Datory.Utils
 {
     internal static partial class RepositoryUtils
     {
-        public static async Task SyncAndCheckGuidAsync(IDatabase database, string tableName, Entity dataInfo)
+        public static async Task SyncAndCheckGuidAsync(IDistributedCache cache, IDatabase database, string tableName, Entity dataInfo)
         {
             if (dataInfo == null || dataInfo.Id <= 0) return;
 
@@ -24,15 +25,15 @@ namespace Datory.Utils
             dataInfo.Guid = Utilities.GetGuid();
             dataInfo.LastModifiedDate = DateTime.Now;
 
-            await UpdateAllAsync(database, tableName, new Query()
+            await UpdateAllAsync(cache, database, tableName, new Query()
                 .Set(nameof(Entity.Guid), dataInfo.Guid)
                 .Where(nameof(Entity.Id), dataInfo.Id)
             );
         }
 
-        public static async Task<int> UpdateAllAsync(IDatabase database, string tableName, Query query)
+        public static async Task<int> UpdateAllAsync(IDistributedCache cache, IDatabase database, string tableName, Query query)
         {
-            var xQuery = NewQuery(tableName, query);
+            var xQuery = await NewQueryAsync(cache, tableName, query);
 
             xQuery.Method = "update";
 
@@ -42,26 +43,26 @@ namespace Datory.Utils
             return await connection.ExecuteAsync(sql, bindings);
         }
 
-        public static async Task<int> IncrementAllAsync(IDatabase database, string tableName, string columnName, Query query, int num = 1)
+        public static async Task<int> IncrementAllAsync(IDistributedCache cache, IDatabase database, string tableName, string columnName, Query query, int num = 1)
         {
-            var xQuery = NewQuery(tableName, query);
+            var xQuery = await NewQueryAsync(cache, tableName, query);
 
             xQuery
                 .ClearComponent("update")
                 .SetRaw($"{columnName} = {DbUtils.ColumnIncrement(database.DatabaseType, columnName, num)}");
 
-            return await UpdateAllAsync(database, tableName, xQuery);
+            return await UpdateAllAsync(cache, database, tableName, xQuery);
         }
 
-        public static async Task<int> DecrementAllAsync(IDatabase database, string tableName, string columnName, Query query, int num = 1)
+        public static async Task<int> DecrementAllAsync(IDistributedCache cache, IDatabase database, string tableName, string columnName, Query query, int num = 1)
         {
-            var xQuery = NewQuery(tableName, query);
+            var xQuery = await NewQueryAsync(cache, tableName, query);
 
             xQuery
                 .ClearComponent("update")
                 .SetRaw($"{columnName} = {DbUtils.ColumnDecrement(database.DatabaseType, columnName, num)}");
 
-            return await UpdateAllAsync(database, tableName, xQuery);
+            return await UpdateAllAsync(cache, database, tableName, xQuery);
         }
     }
 }

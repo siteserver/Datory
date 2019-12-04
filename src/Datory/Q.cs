@@ -1,6 +1,8 @@
 ﻿using System;
+using Datory.Caching;
 using SqlKata;
 using Datory.Utils;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace Datory
 {
@@ -16,9 +18,19 @@ namespace Datory
             return NewQuery().Set(column, value);
         }
 
-        public static Query SetRaw(string sql, params object[] bindings)
+        public static Query Set(this Query query, string column, Enum value)
         {
-            return NewQuery().SetRaw(sql, bindings);
+            if (Utilities.EqualsIgnoreCase(column, nameof(Entity.Id)) ||
+                Utilities.EqualsIgnoreCase(column, nameof(Entity.LastModifiedDate))) return query;
+
+            query.AddComponent("update", new BasicCondition
+            {
+                Column = column,
+                Operator = "=",
+                Value = value.GetValue()
+            });
+
+            return query;
         }
 
         public static Query Set(this Query query, string column, object value)
@@ -34,6 +46,11 @@ namespace Datory
             });
 
             return query;
+        }
+
+        public static Query SetRaw(string sql, params object[] bindings)
+        {
+            return NewQuery().SetRaw(sql, bindings);
         }
 
         public static Query SetRaw(this Query query, string sql, params object[] bindings)
@@ -199,6 +216,29 @@ namespace Datory
         public static Query From(Func<Query, Query> callback, string alias = null)
         {
             return NewQuery().From(callback, alias);
+        }
+
+        public static Query CachingAble(this Query query, string key, DistributedCacheEntryOptions options = null)
+        {
+            query.ClearComponent("cache").AddComponent("cache", new CachingCondition
+            {
+                IsCaching = true,
+                Key = key,
+                Options = options
+            });
+
+            return query;
+        }
+
+        public static Query CachingEvict(this Query query, string key)
+        {
+            query.ClearComponent("cache").AddComponent("cache", new CachingCondition
+            {
+                IsCaching = false,
+                Key = key
+            });
+
+            return query;
         }
     }
 }

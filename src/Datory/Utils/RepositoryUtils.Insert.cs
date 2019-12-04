@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper;
+using Microsoft.Extensions.Caching.Distributed;
 using Newtonsoft.Json.Linq;
 
 [assembly: InternalsVisibleTo("Datory.Data.Tests")]
@@ -12,7 +13,7 @@ namespace Datory.Utils
 {
     internal static partial class RepositoryUtils
     {
-        public static async Task<int> InsertObjectAsync<T>(IDatabase database, string tableName, IEnumerable<TableColumn> tableColumns, T dataInfo) where T : Entity
+        public static async Task<int> InsertObjectAsync<T>(IDistributedCache cache, IDatabase database, string tableName, IEnumerable<TableColumn> tableColumns, T dataInfo) where T : Entity
         {
             if (dataInfo == null) return 0;
             dataInfo.Guid = Utilities.GetGuid();
@@ -46,7 +47,7 @@ namespace Datory.Utils
                 dictionary[tableColumn.AttributeName] = value;
             }
 
-            var xQuery = NewQuery(tableName);
+            var xQuery = await NewQueryAsync(cache, tableName);
             xQuery.AsInsert(dictionary, true);
             var (sql, bindings) = Compile(database, tableName, xQuery);
 

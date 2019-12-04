@@ -30,7 +30,7 @@ namespace Datory
                 query.Set(tableColumn.AttributeName, value);
             }
 
-            return await RepositoryUtils.UpdateAllAsync(Database, TableName, query) > 0;
+            return await RepositoryUtils.UpdateAllAsync(Cache, Database, TableName, query) > 0;
         }
 
         public virtual async Task<bool> UpdateAsync<T>(T dataInfo, params string[] columnNames) where T : Entity
@@ -45,7 +45,7 @@ namespace Datory
                     query.Set(columnName, ReflectionUtils.GetValue(dataInfo, columnName));
                 }
 
-                return await RepositoryUtils.UpdateAllAsync(Database, TableName, query) > 0;
+                return await RepositoryUtils.UpdateAllAsync(Cache, Database, TableName, query) > 0;
             }
             if (Utilities.IsGuid(dataInfo.Guid))
             {
@@ -58,7 +58,7 @@ namespace Datory
                     query.Set(columnName, ReflectionUtils.GetValue(dataInfo, columnName));
                 }
 
-                return await RepositoryUtils.UpdateAllAsync(Database, TableName, query) > 0;
+                return await RepositoryUtils.UpdateAllAsync(Cache, Database, TableName, query) > 0;
             }
 
             return false;
@@ -66,17 +66,17 @@ namespace Datory
 
         public virtual async Task<int> UpdateAsync(Query query)
         {
-            return await RepositoryUtils.UpdateAllAsync(Database, TableName, query);
+            return await RepositoryUtils.UpdateAllAsync(Cache, Database, TableName, query);
         }
 
         public virtual async Task<int> IncrementAsync(string columnName, Query query, int num = 1)
         {
-            return await RepositoryUtils.IncrementAllAsync(Database, TableName, columnName, query, num);
+            return await RepositoryUtils.IncrementAllAsync(Cache, Database, TableName, columnName, query, num);
         }
 
         public virtual async Task<int> DecrementAsync(string columnName, Query query, int num = 1)
         {
-            return await RepositoryUtils.DecrementAllAsync(Database, TableName, columnName, query, num);
+            return await RepositoryUtils.DecrementAllAsync(Cache, Database, TableName, columnName, query, num);
         }
     }
 }

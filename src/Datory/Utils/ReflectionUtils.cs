@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Datory.Annotations;
 using Newtonsoft.Json;
 
 [assembly: InternalsVisibleTo("Datory.Data.Tests")]

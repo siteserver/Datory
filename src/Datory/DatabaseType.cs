@@ -1,21 +1,21 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using System.ComponentModel.DataAnnotations;
+using Datory.Annotations;
 
 namespace Datory
 {
     [JsonConverter(typeof(StringEnumConverter))]
     public enum DatabaseType
     {
-        [Display(Name = "MySql")]
+        [DataEnum(DisplayName = "MySql")]
         MySql,
-        [Display(Name = "SqlServer")]
+        [DataEnum(DisplayName = "SqlServer")]
         SqlServer,
-        [Display(Name = "PostgreSql")]
+        [DataEnum(DisplayName = "PostgreSql")]
         PostgreSql,
-        [Display(Name = "Oracle")]
+        [DataEnum(DisplayName = "Oracle")]
         Oracle,
-        [Display(Name = "SQLite")]
+        [DataEnum(DisplayName = "SQLite")]
         SQLite
     }
 }

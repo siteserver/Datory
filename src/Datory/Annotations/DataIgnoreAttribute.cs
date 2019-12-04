@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace Datory
+namespace Datory.Annotations
 {
     [AttributeUsage(AttributeTargets.Property)]
-    [Serializable]
     public class DataIgnoreAttribute : Attribute
     {
     }

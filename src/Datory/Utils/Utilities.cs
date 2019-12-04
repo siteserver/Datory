@@ -117,6 +117,19 @@ namespace Datory.Utils
             return list;
         }
 
+        public static int ToInt(string intStr, int defaultValue = 0)
+        {
+            if (!int.TryParse(intStr?.Trim().TrimStart('0'), out var i))
+            {
+                i = defaultValue;
+            }
+            if (i < 0)
+            {
+                i = defaultValue;
+            }
+            return i;
+        }
+
         public static bool ToBool(string boolStr)
         {
             if (!bool.TryParse(boolStr?.Trim(), out var boolean))

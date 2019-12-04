@@ -11,19 +11,10 @@ namespace Datory
             return NewQuery().Where(column, op, value);
         }
 
-        public static Query WhereNot(string column, string op, object value)
+        public static Query Where(this Query query, string column, string op, Enum value)
         {
-            return NewQuery().WhereNot(column, op, value);
-        }
-
-        public static Query OrWhere(string column, string op, object value)
-        {
-            return NewQuery().OrWhere(column, op, value);
-        }
-
-        public static Query OrWhereNot(string column, string op, object value)
-        {
-            return NewQuery().OrWhereNot(column, op, value);
+            query.Where(column, op, value.GetValue());
+            return query;
         }
 
         public static Query Where(string column, object value)
@@ -31,19 +22,10 @@ namespace Datory
             return NewQuery().Where(column, value);
         }
 
-        public static Query WhereNot(string column, object value)
+        public static Query Where(this Query query, string column, Enum value)
         {
-            return NewQuery().WhereNot(column, value);
-        }
-
-        public static Query OrWhere(string column, object value)
-        {
-            return NewQuery().OrWhere(column, value);
-        }
-
-        public static Query OrWhereNot(string column, object value)
-        {
-            return NewQuery().OrWhereNot(column, value);
+            query.Where(column, value.GetValue());
+            return query;
         }
 
         public static Query Where(object constraints)
@@ -56,6 +38,76 @@ namespace Datory
             return NewQuery().Where(values);
         }
 
+        public static Query Where(Func<Query, Query> callback)
+        {
+            return NewQuery().Where(callback);
+        }
+
+        public static Query Where(string column, string op, Func<Query, Query> callback)
+        {
+            return NewQuery().Where(column, op, callback);
+        }
+
+        public static Query Where(string column, string op, Query query2)
+        {
+            return NewQuery().Where(column, op, query2);
+        }
+
+        public static Query WhereNot(string column, string op, object value)
+        {
+            return NewQuery().WhereNot(column, op, value);
+        }
+
+        public static Query WhereNot(string column, object value)
+        {
+            return NewQuery().WhereNot(column, value);
+        }
+
+        public static Query WhereNot(Func<Query, Query> callback)
+        {
+            return NewQuery().WhereNot(callback);
+        }
+
+        public static Query OrWhere(string column, string op, object value)
+        {
+            return NewQuery().OrWhere(column, op, value);
+        }
+
+        public static Query OrWhere(string column, object value)
+        {
+            return NewQuery().OrWhere(column, value);
+        }
+
+        public static Query OrWhere(Func<Query, Query> callback)
+        {
+            return NewQuery().OrWhere(callback);
+        }
+
+        public static Query OrWhere(string column, string op, Query query2)
+        {
+            return NewQuery().OrWhere(column, op, query2);
+        }
+
+        public static Query OrWhere(string column, string op, Func<Query, Query> callback)
+        {
+            return NewQuery().OrWhere(column, op, callback);
+        }
+
+        public static Query OrWhereNot(string column, string op, object value)
+        {
+            return NewQuery().OrWhereNot(column, op, value);
+        }
+
+        public static Query OrWhereNot(string column, object value)
+        {
+            return NewQuery().OrWhereNot(column, value);
+        }
+
+        public static Query OrWhereNot(Func<Query, Query> callback)
+        {
+            return NewQuery().OrWhereNot(callback);
+        }
+
         public static Query WhereRaw(string sql, params object[] bindings)
         {
             return NewQuery().WhereRaw(sql, bindings);
@@ -64,26 +116,6 @@ namespace Datory
         public static Query OrWhereRaw(string sql, params object[] bindings)
         {
             return NewQuery().OrWhereRaw(sql, bindings);
-        }
-
-        public static Query Where(Func<Query, Query> callback)
-        {
-            return NewQuery().Where(callback);
-        }
-
-        public static Query WhereNot(Func<Query, Query> callback)
-        {
-            return NewQuery().WhereNot(callback);
-        }
-
-        public static Query OrWhere(Func<Query, Query> callback)
-        {
-            return NewQuery().OrWhere(callback);
-        }
-
-        public static Query OrWhereNot(Func<Query, Query> callback)
-        {
-            return NewQuery().OrWhereNot(callback);
         }
 
         public static Query WhereColumns(string first, string op, string second)
@@ -291,26 +323,6 @@ namespace Datory
         public static Query OrWhereNotIn(string column, Func<Query, Query> callback)
         {
             return NewQuery().OrWhereNotIn(column, callback);
-        }
-
-        public static Query Where(string column, string op, Func<Query, Query> callback)
-        {
-            return NewQuery().Where(column, op, callback);
-        }
-
-        public static Query Where(string column, string op, Query query2)
-        {
-            return NewQuery().Where(column, op, query2);
-        }
-
-        public static Query OrWhere(string column, string op, Query query2)
-        {
-            return NewQuery().OrWhere(column, op, query2);
-        }
-
-        public static Query OrWhere(string column, string op, Func<Query, Query> callback)
-        {
-            return NewQuery().OrWhere(column, op, callback);
         }
 
         public static Query WhereExists(Query query2)

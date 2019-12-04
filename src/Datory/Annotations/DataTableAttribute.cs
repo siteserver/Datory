@@ -1,12 +1,11 @@
 ﻿using System;
 
-namespace Datory
+namespace Datory.Annotations
 {
     /// <summary>
     /// Defines the name of a table to use in Datory commands.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class)]
-    [Serializable]
     public class DataTableAttribute : Attribute
     {
         /// <summary>
