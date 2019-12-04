@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using Datory.Cli.Abstractions;
 using Datory.Cli.Core;
-using Datory.Cli.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using Mono.Options;
 using Datory.Utils;

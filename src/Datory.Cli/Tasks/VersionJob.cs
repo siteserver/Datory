@@ -7,7 +7,6 @@ using Datory.Cli.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Mono.Options;
 using System.IO;
-using Datory.Cli.Utils;
 
 namespace Datory.Cli.Tasks
 {
