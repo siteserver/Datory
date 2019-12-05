@@ -4,8 +4,11 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper;
+using Datory.Caching;
 using Microsoft.Extensions.Caching.Distributed;
 using Newtonsoft.Json.Linq;
+using Datory.Extensions;
+using SqlKata;
 
 [assembly: InternalsVisibleTo("Datory.Data.Tests")]
 
@@ -13,7 +16,7 @@ namespace Datory.Utils
 {
     internal static partial class RepositoryUtils
     {
-        public static async Task<int> InsertObjectAsync<T>(IDistributedCache cache, IDatabase database, string tableName, IEnumerable<TableColumn> tableColumns, T dataInfo) where T : Entity
+        public static async Task<int> InsertObjectAsync<T>(IDistributedCache cache, IDatabase database, string tableName, IEnumerable<TableColumn> tableColumns, T dataInfo, Query query = null) where T : Entity
         {
             if (dataInfo == null) return 0;
             dataInfo.Guid = Utilities.GetGuid();
@@ -47,22 +50,27 @@ namespace Datory.Utils
                 dictionary[tableColumn.AttributeName] = value;
             }
 
-            var xQuery = await NewQueryAsync(cache, tableName);
+            var xQuery = NewQuery(tableName, query);
             xQuery.AsInsert(dictionary, true);
-            var (sql, bindings) = Compile(database, tableName, xQuery);
+            var compileInfo = await CompileAsync(cache, database, tableName, xQuery);
 
             if (isIdentityColumn)
             {
-                sql = $@"
+                compileInfo.Sql = $@"
 SET IDENTITY_INSERT {tableName} ON
-{sql}
+{compileInfo.Sql}
 SET IDENTITY_INSERT {tableName} OFF
 ";
             }
 
             using (var connection = database.GetConnection())
             {
-                dataInfo.Id = await connection.QueryFirstAsync<int>(sql, bindings);
+                dataInfo.Id = await connection.QueryFirstAsync<int>(compileInfo.Sql, compileInfo.NamedBindings);
+            }
+
+            if (compileInfo.Caching != null && compileInfo.Caching.Action == CachingAction.Set)
+            {
+                await cache.SetAsync(compileInfo.Caching.CacheKey, dataInfo);
             }
 
             return dataInfo.Id;

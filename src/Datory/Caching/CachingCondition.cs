@@ -5,9 +5,11 @@ namespace Datory.Caching
 {
     public class CachingCondition : AbstractClause
     {
-        public bool IsCaching { get; set; }
-        public string Key { get; set; }
+        public CachingAction Action { get; set; }
         public DistributedCacheEntryOptions Options { get; set; }
+
+        public string CacheKey { get; set; }
+
 
         /// <inheritdoc />
         public override AbstractClause Clone()
@@ -15,8 +17,7 @@ namespace Datory.Caching
             return new CachingCondition
             {
                 Engine = Engine,
-                IsCaching = IsCaching,
-                Key = Key,
+                Action = Action,
                 Options = Options,
                 Component = Component,
             };

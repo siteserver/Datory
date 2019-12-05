@@ -13,36 +13,12 @@ namespace Datory.Utils
 {
     internal static partial class RepositoryUtils
     {
-        private static Query NewQuery(string tableName, Query query = null)
+        public static Query NewQuery(string tableName, Query query = null)
         {
             return query != null ? query.Clone().From(tableName) : new Query(tableName);
         }
 
-        private static async Task<Query> NewQueryAsync(IDistributedCache cache, string tableName, Query query = null)
-        {
-            var q = query != null ? query.Clone().From(tableName) : new Query(tableName);
-            var caching = q.GetOneComponent<CachingCondition>("cache");
-            if (cache == null || caching == null || string.IsNullOrEmpty(caching.Key) || caching.IsCaching) return q;
-
-            q.ClearComponent("cache");
-            await cache.RemoveAsync(caching.Key);
-
-            return q;
-        }
-
-        private static async Task<CachingCondition> GetCachingAsync(Query query, IDistributedCache cache)
-        {
-            var caching = query.GetOneComponent<CachingCondition>("cache");
-
-            if (cache == null || caching == null || string.IsNullOrEmpty(caching.Key)) return null;
-            if (caching.IsCaching) return caching;
-
-            query.ClearComponent("cache");
-            await cache.RemoveAsync(caching.Key);
-            return null;
-        }
-
-        private static (string sql, Dictionary<string, object> namedBindings) Compile(IDatabase database, string tableName, Query query)
+        private static async Task<CompileInfo> CompileAsync(IDistributedCache cache, IDatabase database, string tableName, Query query)
         {
             var method = query.Method;
             if (method == "update")
@@ -120,7 +96,25 @@ namespace Datory.Utils
                 namedBindings = compiled.NamedBindings;
             }
 
-            return (sql, namedBindings);
+            var compileInfo = new CompileInfo
+            {
+                Sql = sql,
+                NamedBindings = namedBindings
+            };
+
+            var caching = query.GetOneComponent<CachingCondition>("cache");
+            if (cache != null && caching != null)
+            {
+                if (caching.Action == CachingAction.Remove)
+                {
+                    query.ClearComponent("cache");
+                    await cache.RemoveAsync(caching.CacheKey);
+                }
+
+                compileInfo.Caching = caching;
+            }
+
+            return compileInfo;
         }
     }
 }

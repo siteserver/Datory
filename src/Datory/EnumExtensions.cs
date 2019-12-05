@@ -1,8 +1,9 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Reflection;
 using Datory.Annotations;
 
-namespace System
+namespace Datory
 {
     /// <summary>
     /// https://stackoverflow.com/a/35273581

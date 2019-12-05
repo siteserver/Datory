@@ -25,13 +25,13 @@ namespace Datory.Utils
 
         public static async Task<int> DeleteAllAsync(IDistributedCache cache, IDatabase database, string tableName, Query query = null)
         {
-            var xQuery = await NewQueryAsync(cache, tableName, query);
+            var xQuery = NewQuery(tableName, query);
             xQuery.AsDelete();
 
-            var (sql, bindings) = Compile(database, tableName, xQuery);
+            var compileInfo = await CompileAsync(cache, database, tableName, xQuery);
 
             using var connection = database.GetConnection();
-            return await connection.ExecuteAsync(sql, bindings);
+            return await connection.ExecuteAsync(compileInfo.Sql, compileInfo.NamedBindings);
         }
     }
 }

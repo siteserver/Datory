@@ -33,19 +33,19 @@ namespace Datory.Utils
 
         public static async Task<int> UpdateAllAsync(IDistributedCache cache, IDatabase database, string tableName, Query query)
         {
-            var xQuery = await NewQueryAsync(cache, tableName, query);
+            var xQuery = NewQuery(tableName, query);
 
             xQuery.Method = "update";
 
-            var (sql, bindings) = Compile(database, tableName, xQuery);
+            var compileInfo = await CompileAsync(cache, database, tableName, xQuery);
 
             using var connection = database.GetConnection();
-            return await connection.ExecuteAsync(sql, bindings);
+            return await connection.ExecuteAsync(compileInfo.Sql, compileInfo.NamedBindings);
         }
 
         public static async Task<int> IncrementAllAsync(IDistributedCache cache, IDatabase database, string tableName, string columnName, Query query, int num = 1)
         {
-            var xQuery = await NewQueryAsync(cache, tableName, query);
+            var xQuery = NewQuery(tableName, query);
 
             xQuery
                 .ClearComponent("update")
@@ -56,7 +56,7 @@ namespace Datory.Utils
 
         public static async Task<int> DecrementAllAsync(IDistributedCache cache, IDatabase database, string tableName, string columnName, Query query, int num = 1)
         {
-            var xQuery = await NewQueryAsync(cache, tableName, query);
+            var xQuery = NewQuery(tableName, query);
 
             xQuery
                 .ClearComponent("update")

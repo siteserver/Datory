@@ -218,27 +218,34 @@ namespace Datory
             return NewQuery().From(callback, alias);
         }
 
-        public static Query CachingAble(this Query query, string key, DistributedCacheEntryOptions options = null)
+        public static Query CachingGet(string cacheKey, DistributedCacheEntryOptions options = null)
         {
-            query.ClearComponent("cache").AddComponent("cache", new CachingCondition
+            return NewQuery().ClearComponent("cache").AddComponent("cache", new CachingCondition
             {
-                IsCaching = true,
-                Key = key,
+                Action = CachingAction.Get,
+                CacheKey = cacheKey,
                 Options = options
             });
-
-            return query;
         }
 
-        public static Query CachingEvict(this Query query, string key)
+        public static Query CachingSet(string cacheKey, DistributedCacheEntryOptions options = null)
         {
-            query.ClearComponent("cache").AddComponent("cache", new CachingCondition
+            return NewQuery().ClearComponent("cache").AddComponent("cache", new CachingCondition
             {
-                IsCaching = false,
-                Key = key
+                Action = CachingAction.Set,
+                CacheKey = cacheKey,
+                Options = options
             });
+        }
 
-            return query;
+        public static Query CachingRemove(string cacheKey, DistributedCacheEntryOptions options = null)
+        {
+            return NewQuery().ClearComponent("cache").AddComponent("cache", new CachingCondition
+            {
+                Action = CachingAction.Remove,
+                CacheKey = cacheKey,
+                Options = options
+            });
         }
     }
 }
