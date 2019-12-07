@@ -25,18 +25,22 @@ namespace Datory
         //     return RepositoryUtils.DeleteAll(Database, TableName, query);
         // }
 
-        public virtual async Task<bool> DeleteAsync(int id)
+        public virtual async Task<bool> DeleteAsync(int id, Query query = null)
         {
             if (id <= 0) return false;
 
-            return await DeleteAsync(Q.Where(nameof(Entity.Id), id)) > 0;
+            query ??= Q.NewQuery();
+
+            return await DeleteAsync(query.Where(nameof(Entity.Id), id)) > 0;
         }
 
-        public virtual async Task<bool> DeleteAsync(string guid)
+        public virtual async Task<bool> DeleteAsync(string guid, Query query = null)
         {
             if (!Utilities.IsGuid(guid)) return false;
 
-            return await DeleteAsync(Q.Where(nameof(Entity.Guid), guid)) > 0;
+            query ??= Q.NewQuery();
+
+            return await DeleteAsync(query.Where(nameof(Entity.Guid), guid)) > 0;
         }
 
         public virtual async Task<int> DeleteAsync(Query query = null)

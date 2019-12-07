@@ -3,12 +3,14 @@ using SqlKata;
 
 namespace Datory.Caching
 {
-    public class CachingCondition : AbstractClause
+    internal class CachingCondition : AbstractClause
     {
         public CachingAction Action { get; set; }
         public DistributedCacheEntryOptions Options { get; set; }
 
         public string CacheKey { get; set; }
+
+        public string[] CacheKeysToRemove { get; set; }
 
 
         /// <inheritdoc />
@@ -19,6 +21,8 @@ namespace Datory.Caching
                 Engine = Engine,
                 Action = Action,
                 Options = Options,
+                CacheKey = CacheKey,
+                CacheKeysToRemove = CacheKeysToRemove,
                 Component = Component,
             };
         }

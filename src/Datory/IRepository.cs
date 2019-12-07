@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace Datory
 {

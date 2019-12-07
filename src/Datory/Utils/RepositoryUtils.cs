@@ -105,10 +105,13 @@ namespace Datory.Utils
             var caching = query.GetOneComponent<CachingCondition>("cache");
             if (cache != null && caching != null)
             {
-                if (caching.Action == CachingAction.Remove)
+                if (caching.Action == CachingAction.Remove && caching.CacheKeysToRemove != null)
                 {
                     query.ClearComponent("cache");
-                    await cache.RemoveAsync(caching.CacheKey);
+                    foreach (var cacheKey in caching.CacheKeysToRemove)
+                    {
+                        await cache.RemoveAsync(cacheKey);
+                    }
                 }
 
                 compileInfo.Caching = caching;

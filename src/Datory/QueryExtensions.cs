@@ -36,13 +36,12 @@ namespace Datory
             return query;
         }
 
-        public static Query CachingRemove(this Query query, string cacheKey, DistributedCacheEntryOptions options = null)
+        public static Query CachingRemove(this Query query, params string[] cacheKeys)
         {
             query.ClearComponent("cache").AddComponent("cache", new CachingCondition
             {
                 Action = CachingAction.Remove,
-                CacheKey = cacheKey,
-                Options = options
+                CacheKeysToRemove = cacheKeys
             });
 
             return query;

@@ -7,14 +7,16 @@ namespace Datory
 {
     public partial class Repository<T> where T : Entity, new()
     {
-        public virtual async Task<T> GetAsync(int id)
+        public virtual async Task<T> GetAsync(int id, Query query = null)
         {
-            return id <= 0 ? null : await GetAsync(Q.Where(nameof(Entity.Id), id));
+            query ??= Q.NewQuery();
+            return id <= 0 ? null : await GetAsync(query.Where(nameof(Entity.Id), id));
         }
 
-        public virtual async Task<T> GetAsync(string guid)
+        public virtual async Task<T> GetAsync(string guid, Query query = null)
         {
-            return !Utilities.IsGuid(guid) ? null : await GetAsync(Q.Where(nameof(Entity.Guid), guid));
+            query ??= Q.NewQuery();
+            return !Utilities.IsGuid(guid) ? null : await GetAsync(query.Where(nameof(Entity.Guid), guid));
         }
 
         public virtual async Task<T> GetAsync(Query query = null)

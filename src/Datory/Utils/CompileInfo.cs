@@ -5,7 +5,7 @@ using Datory.Caching;
 
 namespace Datory.Utils
 {
-    public class CompileInfo
+    internal class CompileInfo
     {
         public string Sql { get; set; }
         public Dictionary<string, object> NamedBindings { get; set; }

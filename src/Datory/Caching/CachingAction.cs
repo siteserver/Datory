@@ -1,10 +1,6 @@
-using Datory.Annotations;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-
 namespace Datory.Caching
 {
-    public enum CachingAction
+    internal enum CachingAction
     {
         Get,
         Set,

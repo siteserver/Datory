@@ -7,7 +7,6 @@ using Dapper;
 using Datory.Caching;
 using Microsoft.Extensions.Caching.Distributed;
 using Newtonsoft.Json.Linq;
-using Datory.Extensions;
 using SqlKata;
 
 [assembly: InternalsVisibleTo("Datory.Data.Tests")]

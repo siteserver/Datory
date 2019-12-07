@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Dapper;
 using Datory.Caching;
-using Datory.Extensions;
 using Microsoft.Extensions.Caching.Distributed;
 using SqlKata;
 
@@ -22,7 +21,7 @@ namespace Datory.Utils
 
             if (compileInfo.Caching != null && compileInfo.Caching.Action == CachingAction.Get)
             {
-                return await cache.GetOrCreateBoolAsync(compileInfo.Caching.CacheKey,
+                return await cache.GetOrCreateAsync(compileInfo.Caching.CacheKey,
                     async () => await _ExistsAsync(database, compileInfo),
                     compileInfo.Caching.Options
                 );
@@ -45,7 +44,7 @@ namespace Datory.Utils
 
             if (compileInfo.Caching != null && compileInfo.Caching.Action == CachingAction.Get)
             {
-                return await cache.GetOrCreateIntAsync(compileInfo.Caching.CacheKey,
+                return await cache.GetOrCreateAsync(compileInfo.Caching.CacheKey,
                     async () => await _CountAsync(database, compileInfo),
                     compileInfo.Caching.Options
                 );
@@ -68,7 +67,7 @@ namespace Datory.Utils
 
             if (compileInfo.Caching != null && compileInfo.Caching.Action == CachingAction.Get)
             {
-                return await cache.GetOrCreateIntAsync(compileInfo.Caching.CacheKey,
+                return await cache.GetOrCreateAsync(compileInfo.Caching.CacheKey,
                     async () => await _SumAsync(database, compileInfo),
                     compileInfo.Caching.Options
                 );
@@ -138,7 +137,7 @@ namespace Datory.Utils
 
             if (compileInfo.Caching != null && compileInfo.Caching.Action == CachingAction.Get)
             {
-                return await cache.GetOrCreateIntAsync(compileInfo.Caching.CacheKey,
+                return await cache.GetOrCreateAsync(compileInfo.Caching.CacheKey,
                     async () => await _MaxAsync(database, compileInfo),
                     compileInfo.Caching.Options
                 );
