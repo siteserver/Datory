@@ -1,7 +1,4 @@
-﻿using System.Linq;
-using System.Reflection;
-using Datory.Annotations;
-using Datory.Caching;
+﻿using Datory.Caching;
 using Microsoft.Extensions.Caching.Distributed;
 using SqlKata;
 
@@ -42,6 +39,16 @@ namespace Datory
             {
                 Action = CachingAction.Remove,
                 CacheKeysToRemove = cacheKeys
+            });
+
+            return query;
+        }
+
+        public static Query AllowIdentityInsert(this Query query)
+        {
+            query.ClearComponent("identity").AddComponent("identity", new BasicCondition
+            {
+                Value = true
             });
 
             return query;

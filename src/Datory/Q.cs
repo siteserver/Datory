@@ -220,31 +220,22 @@ namespace Datory
 
         public static Query CachingGet(string cacheKey, DistributedCacheEntryOptions options = null)
         {
-            return NewQuery().ClearComponent("cache").AddComponent("cache", new CachingCondition
-            {
-                Action = CachingAction.Get,
-                CacheKey = cacheKey,
-                Options = options
-            });
+            return NewQuery().CachingGet(cacheKey, options);
         }
 
         public static Query CachingSet(string cacheKey, DistributedCacheEntryOptions options = null)
         {
-            return NewQuery().ClearComponent("cache").AddComponent("cache", new CachingCondition
-            {
-                Action = CachingAction.Set,
-                CacheKey = cacheKey,
-                Options = options
-            });
+            return NewQuery().CachingSet(cacheKey, options);
         }
 
         public static Query CachingRemove(params string[] cacheKeys)
         {
-            return NewQuery().ClearComponent("cache").AddComponent("cache", new CachingCondition
-            {
-                Action = CachingAction.Remove,
-                CacheKeysToRemove = cacheKeys
-            });
+            return NewQuery().CachingRemove(cacheKeys);
+        }
+
+        public static Query AllowIdentityInsert()
+        {
+            return NewQuery().AllowIdentityInsert();
         }
     }
 }

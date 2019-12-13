@@ -22,26 +22,26 @@ namespace Datory.Utils
             dataInfo.CreatedDate = DateTime.UtcNow;
             dataInfo.LastModifiedDate = DateTime.UtcNow;
 
-            var isIdentityColumn = false;
+            var setIdentityInsert = false;
+            if (dataInfo.Id > 0)
+            {
+                var identityCondition = query.GetOneComponent<BasicCondition>("identity");
+                if (identityCondition != null)
+                {
+                    if (database.DatabaseType == DatabaseType.SqlServer)
+                    {
+                        setIdentityInsert = true;
+                    }
+                }
+                else
+                {
+                    dataInfo.Id = 0;
+                }
+            }
 
             var dictionary = new Dictionary<string, object>();
             foreach (var tableColumn in tableColumns)
             {
-                if (Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.Id)))
-                {
-                    if (dataInfo.Id > 0)
-                    {
-                        if (database.DatabaseType == DatabaseType.SqlServer)
-                        {
-                            isIdentityColumn = true;
-                        }
-                    }
-                    else
-                    {
-                        continue;
-                    }
-                }
-
                 var value = tableColumn.IsExtend
                     ? dataInfo.GetExtendColumnValue()
                     : dataInfo.Get(tableColumn.AttributeName);
@@ -53,7 +53,7 @@ namespace Datory.Utils
             xQuery.AsInsert(dictionary, true);
             var compileInfo = await CompileAsync(cache, database, tableName, xQuery);
 
-            if (isIdentityColumn)
+            if (setIdentityInsert)
             {
                 compileInfo.Sql = $@"
 SET IDENTITY_INSERT {tableName} ON
