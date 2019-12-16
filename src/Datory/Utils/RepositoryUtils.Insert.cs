@@ -25,12 +25,19 @@ namespace Datory.Utils
             var setIdentityInsert = false;
             if (dataInfo.Id > 0)
             {
-                var identityCondition = query.GetOneComponent<BasicCondition>("identity");
-                if (identityCondition != null)
+                if (query != null)
                 {
-                    if (database.DatabaseType == DatabaseType.SqlServer)
+                    var identityCondition = query.GetOneComponent<BasicCondition>("identity");
+                    if (identityCondition != null)
                     {
-                        setIdentityInsert = true;
+                        if (database.DatabaseType == DatabaseType.SqlServer)
+                        {
+                            setIdentityInsert = true;
+                        }
+                    }
+                    else
+                    {
+                        dataInfo.Id = 0;
                     }
                 }
                 else
