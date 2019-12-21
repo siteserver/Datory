@@ -19,8 +19,8 @@ namespace Datory.Utils
         {
             if (dataInfo == null) return 0;
             dataInfo.Guid = Utilities.GetGuid();
-            dataInfo.CreatedDate = DateTime.UtcNow;
-            dataInfo.LastModifiedDate = DateTime.UtcNow;
+            dataInfo.CreatedDate = DateTime.Now;
+            dataInfo.LastModifiedDate = DateTime.Now;
 
             var setIdentityInsert = false;
             if (dataInfo.Id > 0)
