@@ -15,7 +15,7 @@ namespace Datory.Utils
     {
         private static readonly ConcurrentDictionary<RuntimeTypeHandle, IEnumerable<PropertyInfo>> TypeProperties = new ConcurrentDictionary<RuntimeTypeHandle, IEnumerable<PropertyInfo>>();
 
-        private static List<PropertyInfo> GetTypeProperties(Type type)
+        internal static List<PropertyInfo> GetTypeProperties(Type type)
         {
             if (TypeProperties.TryGetValue(type.TypeHandle, out IEnumerable<PropertyInfo> pis))
             {

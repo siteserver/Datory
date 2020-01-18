@@ -26,25 +26,5 @@ namespace Datory.Tests.Core
             var properties = ReflectionUtils.GetTypeProperties(typeof(MyClass));
             Assert.Equal(4, properties.Count);
         }
-
-        [Fact]
-        public void TestToKeyValueListEmpty()
-        {
-            var kvs = ReflectionUtils.ToKeyValueList(null);
-            Assert.Empty(kvs);
-        }
-
-        [Fact]
-        public void TestToKeyValueListObject()
-        {
-            var kvs = ReflectionUtils.ToKeyValueList(new
-            {
-                A = "a",
-                B = "b",
-                C = "c",
-                D = "d"
-            });
-            Assert.Equal(4, kvs.Count);
-        }
     }
 }
