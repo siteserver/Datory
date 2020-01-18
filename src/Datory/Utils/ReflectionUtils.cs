@@ -264,13 +264,13 @@ namespace Datory.Utils
             return null;
         }
 
-        public static void SetValue(object obj, string propertyName, object val)
+        public static void SetValue(object obj, string propertyName, object value)
         {
             var property = GetTypeProperty(obj.GetType(), propertyName);
 
             if (property != null && property.CanWrite)
             {
-                if (val == null)
+                if (value == null)
                 {
                     property.SetValue(obj, null, null);
                 }
@@ -278,16 +278,18 @@ namespace Datory.Utils
                 {
                     try
                     {
-                        property.SetValue(obj, Enum.Parse(property.PropertyType, val.ToString(), true), null);
+                        property.SetValue(obj, Enum.Parse(property.PropertyType, value.ToString(), true), null);
                     }
                     catch
                     {
-                        property.SetValue(obj, ChangeType(val, property.PropertyType), null);
+                        property.SetValue(obj, ChangeType(value, property.PropertyType), null);
                     }
                 }
                 else
                 {
-                    property.SetValue(obj, ChangeType(val, property.PropertyType), null);
+                    var t = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+                    var safeValue = ChangeType(value, t);
+                    property.SetValue(obj, safeValue, null);
                 }
             }
         }
