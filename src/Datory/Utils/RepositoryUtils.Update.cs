@@ -17,7 +17,7 @@ namespace Datory.Utils
 
             if (!string.IsNullOrEmpty(dataInfo.GetExtendColumnName()))
             {
-                dataInfo.Sync(dataInfo.Get<string>(dataInfo.GetExtendColumnName()));
+                dataInfo.LoadJson(dataInfo.Get<string>(dataInfo.GetExtendColumnName()));
             }
 
             if (Utilities.IsGuid(dataInfo.Guid)) return;

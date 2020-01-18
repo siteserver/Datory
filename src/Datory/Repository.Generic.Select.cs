@@ -24,7 +24,7 @@ namespace Datory
             return await RepositoryUtils.GetObjectAsync<T>(Cache, Database, TableName, query);
         }
 
-        public virtual async Task<IEnumerable<T>> GetAllAsync(Query query = null)
+        public virtual async Task<List<T>> GetAllAsync(Query query = null)
         {
             return await RepositoryUtils.GetObjectListAsync<T>(Cache, Database, TableName, query);
         }

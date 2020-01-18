@@ -15,7 +15,7 @@ namespace Datory.Utils
     {
         private static readonly ConcurrentDictionary<RuntimeTypeHandle, IEnumerable<PropertyInfo>> TypeProperties = new ConcurrentDictionary<RuntimeTypeHandle, IEnumerable<PropertyInfo>>();
 
-        public static List<PropertyInfo> GetTypeProperties(Type type)
+        private static List<PropertyInfo> GetTypeProperties(Type type)
         {
             if (TypeProperties.TryGetValue(type.TypeHandle, out IEnumerable<PropertyInfo> pis))
             {
@@ -26,6 +26,12 @@ namespace Datory.Utils
 
             TypeProperties[type.TypeHandle] = properties;
             return properties.ToList();
+        }
+
+        private static PropertyInfo GetTypeProperty(Type type, string propertyName)
+        {
+            var propertyInfoList = GetTypeProperties(type);
+            return propertyInfoList.FirstOrDefault(x => x.Name == propertyName);
         }
 
         private static readonly ConcurrentDictionary<RuntimeTypeHandle, string> TypeTableName = new ConcurrentDictionary<RuntimeTypeHandle, string>();
@@ -114,7 +120,7 @@ namespace Datory.Utils
 
             var ignores = new List<string>();
 
-            var properties = type.GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance).ToArray();
+            var properties = GetTypeProperties(type);
 
             foreach (var propertyInfo in properties)
             {
@@ -139,7 +145,7 @@ namespace Datory.Utils
 
             var ignores = new List<string>();
 
-            var properties = type.GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance).ToArray();
+            var properties = GetTypeProperties(type);
 
             foreach (var propertyInfo in properties)
             {
@@ -158,7 +164,7 @@ namespace Datory.Utils
             var entityColumns = new List<TableColumn>();
             var tableColumns = new List<TableColumn>();
 
-            var properties = type.GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance).ToArray();
+            var properties = GetTypeProperties(type);
 
             foreach (var propertyInfo in properties)
             {
@@ -171,7 +177,7 @@ namespace Datory.Utils
 
                 var propertyType = Nullable.GetUnderlyingType(propertyInfo.PropertyType) ?? propertyInfo.PropertyType;
 
-                if (propertyType == typeof(string) || propertyType == typeof(char))
+                if (propertyType == typeof(string) || propertyType == typeof(char) || propertyType == typeof(Enum))
                 {
                     if (attribute.Text)
                     {
@@ -233,22 +239,26 @@ namespace Datory.Utils
             return columns;
         }
 
-        public static IList<KeyValuePair<string, object>> ToKeyValueList(object parameters)
-        {
-            if (parameters == null) return new List<KeyValuePair<string, object>>();
-
-            var type = parameters.GetType();
-            var props = type.GetProperties();
-            return props.Select(x => new KeyValuePair<string, object>(x.Name, x.GetValue(parameters, null))).ToList();
-        }
-
         public static object GetValue(object obj, string propertyName)
         {
-            var property = obj.GetType().GetProperty(propertyName,
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            var property = GetTypeProperty(obj.GetType(), propertyName);
             if (property != null && property.CanRead)
             {
-                return property.GetValue(obj, null);
+                var val = property.GetValue(obj, null);
+
+                if (property.PropertyType.IsEnum)
+                {
+                    try
+                    {
+                        return Enum.Parse(property.PropertyType, val.ToString(), true);
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
+                }
+
+                return val;
             }
 
             return null;
@@ -256,12 +266,29 @@ namespace Datory.Utils
 
         public static void SetValue(object obj, string propertyName, object val)
         {
-            var property = obj.GetType().GetProperty(propertyName,
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            var property = GetTypeProperty(obj.GetType(), propertyName);
 
             if (property != null && property.CanWrite)
             {
-                property.SetValue(obj, val == null ? null : ChangeType(val, property.PropertyType), null);
+                if (val == null)
+                {
+                    property.SetValue(obj, null, null);
+                }
+                else if (property.PropertyType.IsEnum)
+                {
+                    try
+                    {
+                        property.SetValue(obj, Enum.Parse(property.PropertyType, val.ToString(), true), null);
+                    }
+                    catch
+                    {
+                        property.SetValue(obj, ChangeType(val, property.PropertyType), null);
+                    }
+                }
+                else
+                {
+                    property.SetValue(obj, ChangeType(val, property.PropertyType), null);
+                }
             }
         }
 

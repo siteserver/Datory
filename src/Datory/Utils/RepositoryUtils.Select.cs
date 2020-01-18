@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Dapper;
 using Datory.Caching;
 using Microsoft.Extensions.Caching.Distributed;
+using Org.BouncyCastle.Asn1.X509;
 using SqlKata;
 
 [assembly: InternalsVisibleTo("Datory.Tests")]
@@ -153,7 +154,7 @@ namespace Datory.Utils
             return max ?? 0;
         }
 
-        public static async Task<T> GetObjectAsync<T>(IDistributedCache cache, IDatabase database, string tableName, Query query = null) where T : Entity
+        public static async Task<T> GetObjectAsync<T>(IDistributedCache cache, IDatabase database, string tableName, Query query = null) where T : Entity, new()
         {
             var xQuery = NewQuery(tableName, query);
             xQuery.ClearComponent("select").SelectRaw("*").Limit(1);
@@ -170,19 +171,27 @@ namespace Datory.Utils
             return await _GetObjectAsync<T>(cache, database, tableName, compileInfo);
         }
 
-        private static async Task<T> _GetObjectAsync<T>(IDistributedCache cache, IDatabase database, string tableName, CompileInfo compileInfo) where T : Entity
+        private static async Task<T> _GetObjectAsync<T>(IDistributedCache cache, IDatabase database, string tableName, CompileInfo compileInfo) where T : Entity, new()
         {
-            T value;
+            dynamic row;
+            T value = null;
             using (var connection = database.GetConnection())
             {
-                value = await connection.QueryFirstOrDefaultAsync<T>(compileInfo.Sql, compileInfo.NamedBindings);
+                row = await connection.QueryFirstOrDefaultAsync<dynamic>(compileInfo.Sql, compileInfo.NamedBindings);
             }
 
-            await SyncAndCheckGuidAsync(cache, database, tableName, value);
+            if (row != null)
+            {
+                var fields = row as IDictionary<string, object>;
+                value = new T();
+                value.LoadDict(fields);
+                await SyncAndCheckGuidAsync(cache, database, tableName, value);
+            }
+            
             return value;
         }
 
-        public static async Task<IEnumerable<T>> GetObjectListAsync<T>(IDistributedCache cache, IDatabase database, string tableName, Query query = null) where T : Entity
+        public static async Task<List<T>> GetObjectListAsync<T>(IDistributedCache cache, IDatabase database, string tableName, Query query = null) where T : Entity, new()
         {
             var xQuery = NewQuery(tableName, query);
             xQuery.ClearComponent("select").SelectRaw("*");
@@ -199,18 +208,24 @@ namespace Datory.Utils
             return await _GetObjectListAsync<T>(cache, database, tableName, compileInfo);
         }
 
-        private static async Task<IEnumerable<T>> _GetObjectListAsync<T>(IDistributedCache cache, IDatabase database, string tableName, CompileInfo compileInfo) where T : Entity
+        private static async Task<List<T>> _GetObjectListAsync<T>(IDistributedCache cache, IDatabase database, string tableName, CompileInfo compileInfo) where T : Entity, new()
         {
-            IEnumerable<T> values;
+            IEnumerable<dynamic> results;
+            var values = new List<T>();
             using (var connection = database.GetConnection())
             {
-                values = await connection.QueryAsync<T>(compileInfo.Sql, compileInfo.NamedBindings);
+                results = await connection.QueryAsync<dynamic>(compileInfo.Sql, compileInfo.NamedBindings);
             }
 
-            foreach (var dataInfo in values)
+            foreach (var row in results)
             {
-                await SyncAndCheckGuidAsync(cache, database, tableName, dataInfo);
+                var fields = row as IDictionary<string, object>;
+                var entity = new T();
+                entity.LoadDict(fields);
+                await SyncAndCheckGuidAsync(cache, database, tableName, entity);
+                values.Add(entity);
             }
+
             return values;
         }
     }

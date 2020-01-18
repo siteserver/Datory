@@ -81,29 +81,36 @@ namespace Datory.Utils
 
             if (string.IsNullOrEmpty(json)) return dict;
 
-            if (json.StartsWith("{") && json.EndsWith("}"))
+            try
             {
-                dict = JsonDeserialize<Dictionary<string, object>>(json);
-                return dict;
-            }
-
-            json = json.Replace("/u0026", "&");
-
-            var pairs = json.Split('&');
-            foreach (var pair in pairs)
-            {
-                if (pair.IndexOf("=", StringComparison.Ordinal) == -1) continue;
-                var name = pair.Split('=')[0];
-                if (string.IsNullOrEmpty(name)) continue;
-
-                name = name.Replace("_equals_", "=").Replace("_and_", "&").Replace("_question_", "?").Replace("_quote_", "'").Replace("_add_", "+").Replace("_return_", "\r").Replace("_newline_", "\n");
-                var value = pair.Split('=')[1];
-                if (!string.IsNullOrEmpty(value))
+                if (json.StartsWith("{") && json.EndsWith("}"))
                 {
-                    value = value.Replace("_equals_", "=").Replace("_and_", "&").Replace("_question_", "?").Replace("_quote_", "'").Replace("_add_", "+").Replace("_return_", "\r").Replace("_newline_", "\n");
+                    dict = JsonDeserialize<Dictionary<string, object>>(json);
+                    return dict;
                 }
 
-                dict[name] = value;
+                json = json.Replace("/u0026", "&");
+
+                var pairs = json.Split('&');
+                foreach (var pair in pairs)
+                {
+                    if (pair.IndexOf("=", StringComparison.Ordinal) == -1) continue;
+                    var name = pair.Split('=')[0];
+                    if (string.IsNullOrEmpty(name)) continue;
+
+                    name = name.Replace("_equals_", "=").Replace("_and_", "&").Replace("_question_", "?").Replace("_quote_", "'").Replace("_add_", "+").Replace("_return_", "\r").Replace("_newline_", "\n");
+                    var value = pair.Split('=')[1];
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        value = value.Replace("_equals_", "=").Replace("_and_", "&").Replace("_question_", "?").Replace("_quote_", "'").Replace("_add_", "+").Replace("_return_", "\r").Replace("_newline_", "\n");
+                    }
+
+                    dict[name] = value;
+                }
+            }
+            catch
+            {
+                // ignored
             }
 
             return dict;

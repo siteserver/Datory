@@ -35,7 +35,7 @@ namespace Datory
 
         private readonly Dictionary<string, object> _extendDictionary;
 
-        protected Entity()
+        public Entity()
         {
             var type = GetType();
             _propertyNames = ReflectionUtils.GetPropertyNames(type);
@@ -46,12 +46,28 @@ namespace Datory
             _extendDictionary = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
         }
 
-        protected Entity(IDictionary<string, object> dict) : this()
+        public Entity(IDictionary<string, object> dict) : this()
+        {
+            LoadDict(dict);
+        }
+
+        public void LoadJson(string json)
+        {
+            if (string.IsNullOrEmpty(json)) return;
+
+            LoadDict(Utilities.ToDictionary(json));
+        }
+
+        public void LoadDict(IDictionary<string, object> dict)
         {
             if (dict == null) return;
 
             foreach (var o in dict)
             {
+                if (Utilities.EqualsIgnoreCase(o.Key, "rules"))
+                {
+                    var value = o.Value;
+                }
                 Set(o.Key, o.Value);
             }
         }
@@ -136,25 +152,6 @@ namespace Datory
             return _extendDictionary.ContainsKey(key) || _propertyNames.Contains(key, StringComparer.OrdinalIgnoreCase);
         }
 
-        public void Sync(string json)
-        {
-            var dict = Utilities.ToDictionary(json);
-            Sync(dict);
-        }
-
-        public void Sync(Dictionary<string, object> dictionary)
-        {
-            if (dictionary == null) return;
-
-            foreach (var o in dictionary)
-            {
-                //if (!_columnNames.Contains(o.Key, StringComparer.OrdinalIgnoreCase))
-                //{
-                Set(o.Key, o.Value);
-                //}
-            }
-        }
-
         private bool ContainsIgnoreCase(IEnumerable<string> list, string name, out string realName)
         {
             realName = null;
@@ -181,8 +178,6 @@ namespace Datory
             {
                 _extendDictionary[name] = value;
             }
-
-
 
             //if (!string.IsNullOrEmpty(_extendAttribute))
             //{
@@ -233,7 +228,7 @@ namespace Datory
                 : Utilities.Get(_extendDictionary, name);
         }
 
-        public T Get<T>(string name, T defaultValue = default(T))
+        public T Get<T>(string name, T defaultValue = default)
         {
             return Utilities.Get(Get(name), defaultValue);
         }
@@ -295,7 +290,7 @@ namespace Datory
         {
             var dict = serializer.Deserialize<Dictionary<string, object>>(reader);
             var instance = Activator.CreateInstance(objectType);
-            ((Entity)instance).Sync(dict);
+            ((Entity)instance).LoadDict(dict);
             return instance;
 
             //var value = (string)reader.Value;
