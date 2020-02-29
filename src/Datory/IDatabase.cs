@@ -32,11 +32,11 @@ namespace Datory
 
         Task DropTableAsync(string tableName);
 
-        Task<IList<TableColumn>> GetTableColumnsAsync(string tableName);
+        Task<List<TableColumn>> GetTableColumnsAsync(string tableName);
 
-        Task<IList<string>> GetDatabaseNamesAsync();
+        Task<List<string>> GetDatabaseNamesAsync();
 
-        Task<IList<string>> GetTableNamesAsync();
+        Task<List<string>> GetTableNamesAsync();
 
         Task<(bool IsConnectionWorks, string ErrorMessage)> IsConnectionWorksAsync();
     }

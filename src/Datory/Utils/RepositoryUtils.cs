@@ -4,7 +4,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Datory.Caching;
-using Microsoft.Extensions.Caching.Distributed;
 using SqlKata;
 
 [assembly: InternalsVisibleTo("Datory.Data.Tests")]
@@ -15,10 +14,10 @@ namespace Datory.Utils
     {
         public static Query NewQuery(string tableName, Query query = null)
         {
-            return query != null ? query.Clone().From(tableName) : new Query(tableName);
+            return query == null ? new Query(tableName) : query.Clone().From(tableName);
         }
 
-        private static async Task<CompileInfo> CompileAsync(IDistributedCache cache, IDatabase database, string tableName, Query query)
+        private static async Task<CompileInfo> CompileAsync(IDatabase database, string tableName, IRedis redis, Query query)
         {
             var method = query.Method;
             if (method == "update")
@@ -70,12 +69,6 @@ namespace Datory.Utils
                     }
                 }
                 bindings.AddRange(compiled.Bindings);
-                //var index = compiled.Sql.IndexOf(" WHERE ", StringComparison.Ordinal);
-                //var where = string.Empty;
-                //if (index != -1)
-                //{
-                //    where = compiled.Sql.Substring(index);
-                //}
 
                 var result = new SqlResult
                 {
@@ -102,19 +95,24 @@ namespace Datory.Utils
                 NamedBindings = namedBindings
             };
 
-            var caching = query.GetOneComponent<CachingCondition>("cache");
-            if (cache != null && caching != null)
+            var cacheList = query.GetComponents<CachingCondition>("cache");
+            if (cacheList != null && cacheList.Count > 0)
             {
-                if (caching.Action == CachingAction.Remove && caching.CacheKeysToRemove != null)
+                var cacheManager = await CachingUtils.GetCacheManagerAsync(redis);
+                foreach (var caching in cacheList)
                 {
-                    query.ClearComponent("cache");
-                    foreach (var cacheKey in caching.CacheKeysToRemove)
+                    if (caching.Action == CachingAction.Remove && caching.CacheKeysToRemove != null)
                     {
-                        await cache.RemoveAsync(cacheKey);
+                        foreach (var cacheKey in caching.CacheKeysToRemove)
+                        {
+                            cacheManager.Remove(cacheKey);
+                        }
+                    }
+                    else if (caching.Action == CachingAction.Get)
+                    {
+                        compileInfo.Caching = caching;
                     }
                 }
-
-                compileInfo.Caching = caching;
             }
 
             return compileInfo;

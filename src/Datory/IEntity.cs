@@ -2,7 +2,7 @@
 
 namespace Datory
 {
-    public interface IEntity
+    public interface IEntity : ICloneable
     {
         int Id { get; set; }
 

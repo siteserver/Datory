@@ -28,7 +28,7 @@ namespace Datory.Utils
             return properties.ToList();
         }
 
-        private static PropertyInfo GetTypeProperty(Type type, string propertyName)
+        public static PropertyInfo GetTypeProperty(Type type, string propertyName)
         {
             var propertyInfoList = GetTypeProperties(type);
             return propertyInfoList.FirstOrDefault(x => x.Name == propertyName);
@@ -92,23 +92,6 @@ namespace Datory.Utils
             return names;
         }
 
-        private static readonly ConcurrentDictionary<RuntimeTypeHandle, string> TableExtendColumnName = new ConcurrentDictionary<RuntimeTypeHandle, string>();
-
-        public static string GetTableExtendColumnName(Type type)
-        {
-            if (TableExtendColumnName.TryGetValue(type.TypeHandle, out var tc))
-            {
-                return tc;
-            }
-
-            var columnName =
-                GetTableColumns(type).Where(x => x.IsExtend).Select(x => x.AttributeName).FirstOrDefault() ??
-                string.Empty;
-
-            TableExtendColumnName[type.TypeHandle] = columnName;
-            return columnName;
-        }
-
         private static readonly ConcurrentDictionary<RuntimeTypeHandle, IEnumerable<string>> DataIgnoreNames = new ConcurrentDictionary<RuntimeTypeHandle, IEnumerable<string>>();
 
         public static List<string> GetDataIgnoreNames(Type type)
@@ -168,59 +151,12 @@ namespace Datory.Utils
 
             foreach (var propertyInfo in properties)
             {
-                var attribute = propertyInfo.GetCustomAttribute<DataColumnAttribute>(true);
-                if (attribute == null) continue;
-
-                var dataType = DataType.VarChar;
-                var dataLength = 0;
-                var dataExtend = false;
-
-                var propertyType = Nullable.GetUnderlyingType(propertyInfo.PropertyType) ?? propertyInfo.PropertyType;
-
-                if (propertyType == typeof(string) || propertyType == typeof(char) || propertyType == typeof(Enum))
-                {
-                    if (attribute.Text)
-                    {
-                        dataType = DataType.Text;
-                        dataExtend = attribute.Extend;
-                    }
-                    else
-                    {
-                        dataType = DataType.VarChar;
-                        dataLength = attribute.Length;
-                        if (dataLength <= 0)
-                        {
-                            dataLength = DbUtils.VarCharDefaultLength;
-                        }
-                    }
-                }
-                else if (propertyType == typeof(int))
-                {
-                    dataType = DataType.Integer;
-                }
-                else if (propertyType == typeof(bool))
-                {
-                    dataType = DataType.Boolean;
-                }
-                else if (propertyType == typeof(DateTimeOffset) || propertyType == typeof(DateTime))
-                {
-                    dataType = DataType.DateTime;
-                }
-                else if (propertyType == typeof(double) || propertyType == typeof(decimal))
-                {
-                    dataType = DataType.Decimal;
-                }
-
-                var tableColumn = new TableColumn
-                {
-                    AttributeName = propertyInfo.Name,
-                    DataType = dataType,
-                    DataLength = dataLength,
-                    IsExtend = dataExtend
-                };
+                var tableColumn = ValueUtils.GetTableColumn(propertyInfo);
+                if (tableColumn == null) continue;
 
                 if (Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.Id)) ||
                     Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.Guid)) ||
+                    Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.ExtendValues)) ||
                     Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.CreatedDate)) ||
                     Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.LastModifiedDate)))
                 {
@@ -239,76 +175,6 @@ namespace Datory.Utils
             return columns;
         }
 
-        public static object GetValue(object obj, string propertyName)
-        {
-            var property = GetTypeProperty(obj.GetType(), propertyName);
-            if (property != null && property.CanRead)
-            {
-                var val = property.GetValue(obj, null);
-
-                if (property.PropertyType.IsEnum)
-                {
-                    try
-                    {
-                        return Enum.Parse(property.PropertyType, val.ToString(), true);
-                    }
-                    catch
-                    {
-                        // ignored
-                    }
-                }
-
-                return val;
-            }
-
-            return null;
-        }
-
-        public static void SetValue(object obj, string propertyName, object value)
-        {
-            var property = GetTypeProperty(obj.GetType(), propertyName);
-
-            if (property != null && property.CanWrite)
-            {
-                if (value == null)
-                {
-                    property.SetValue(obj, null, null);
-                }
-                else if (property.PropertyType.IsEnum)
-                {
-                    try
-                    {
-                        property.SetValue(obj, Enum.Parse(property.PropertyType, value.ToString(), true), null);
-                    }
-                    catch
-                    {
-                        property.SetValue(obj, ChangeType(value, property.PropertyType), null);
-                    }
-                }
-                else
-                {
-                    var t = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
-                    var safeValue = ChangeType(value, t);
-                    property.SetValue(obj, safeValue, null);
-                }
-            }
-        }
-
-        private static object ChangeType(object value, Type conversionType)
-        {
-            try
-            {
-                return Convert.ChangeType(value, conversionType);
-            }
-            catch
-            {
-                return GetDefault(conversionType);
-            }
-        }
-
-        private static object GetDefault(Type type)
-        {
-            return type.IsValueType ? Activator.CreateInstance(type) : null;
-        }
+        
     }
 }

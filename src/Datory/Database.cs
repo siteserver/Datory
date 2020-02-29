@@ -16,7 +16,7 @@ namespace Datory
     {
         public Database(DatabaseType databaseType, string connectionString)
         {
-            if (connectionString == null) return;
+            if (string.IsNullOrEmpty(connectionString)) return;
 
             if (databaseType == DatabaseType.MySql)
             {
@@ -383,9 +383,9 @@ namespace Datory
             await connection.ExecuteAsync($"DROP TABLE {DbUtils.GetQuotedIdentifier(DatabaseType, tableName)}");
         }
 
-        public async Task<IList<TableColumn>> GetTableColumnsAsync(string tableName)
+        public async Task<List<TableColumn>> GetTableColumnsAsync(string tableName)
         {
-            IList<TableColumn> list = null;
+            List<TableColumn> list = null;
 
             if (DatabaseType == DatabaseType.MySql)
             {
@@ -411,9 +411,9 @@ namespace Datory
             return list;
         }
 
-        public async Task<IList<string>> GetDatabaseNamesAsync()
+        public async Task<List<string>> GetDatabaseNamesAsync()
         {
-            IList<string> tableNames = null;
+            List<string> tableNames = null;
 
             if (DatabaseType == DatabaseType.MySql)
             {
@@ -439,9 +439,9 @@ namespace Datory
             return tableNames;
         }
 
-        public async Task<IList<string>> GetTableNamesAsync()
+        public async Task<List<string>> GetTableNamesAsync()
         {
-            IList<string> tableNames = null;
+            List<string> tableNames = null;
 
             if (DatabaseType == DatabaseType.MySql)
             {

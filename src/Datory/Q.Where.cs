@@ -133,9 +133,39 @@ namespace Datory
             return NewQuery().WhereNull(column);
         }
 
+        public static Query WhereNullOrFalse(string column)
+        {
+            return NewQuery().Where(q => q.WhereFalse(column).OrWhereNull(column));
+        }
+
+        public static Query WhereNullOrFalse(this Query query, string column)
+        {
+            return query.Where(q => q.WhereFalse(column).OrWhereNull(column));
+        }
+
+        public static Query WhereNullOrEmpty(string column)
+        {
+            return NewQuery().Where(q => q.Where(column, string.Empty).OrWhereNull(column));
+        }
+
+        public static Query WhereNullOrEmpty(this Query query, string column)
+        {
+            return query.Where(q => q.Where(column, string.Empty).OrWhereNull(column));
+        }
+
         public static Query WhereNotNull(string column)
         {
             return NewQuery().WhereNotNull(column);
+        }
+
+        public static Query WhereNotNullOrEmpty(string column)
+        {
+            return NewQuery().WhereNotNull(column).WhereNot(column, string.Empty);
+        }
+
+        public static Query WhereNotNullOrEmpty(this Query query, string column)
+        {
+            return query.WhereNotNull(column).WhereNot(column, string.Empty);
         }
 
         public static Query OrWhereNull(string column)

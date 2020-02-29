@@ -7,15 +7,10 @@ namespace Datory
     [JsonConverter(typeof(StringEnumConverter))]
     public enum DatabaseType
     {
-        [DataEnum(DisplayName = "MySql")]
-        MySql,
-        [DataEnum(DisplayName = "SqlServer")]
-        SqlServer,
-        [DataEnum(DisplayName = "PostgreSql")]
-        PostgreSql,
-        [DataEnum(DisplayName = "Oracle")]
-        Oracle,
-        [DataEnum(DisplayName = "SQLite")]
-        SQLite
+        [DataEnum(DisplayName = "MySql")] MySql,
+        [DataEnum(DisplayName = "SqlServer")] SqlServer,
+        [DataEnum(DisplayName = "PostgreSql")] PostgreSql,
+        [DataEnum(DisplayName = "Oracle")] Oracle,
+        [DataEnum(DisplayName = "SQLite")] SQLite
     }
 }

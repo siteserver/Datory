@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using CacheManager.Core;
 using Dapper;
-using Datory.Caching;
-using Microsoft.Extensions.Caching.Distributed;
 using Newtonsoft.Json.Linq;
 using SqlKata;
 
@@ -15,14 +14,14 @@ namespace Datory.Utils
 {
     internal static partial class RepositoryUtils
     {
-        public static async Task<int> InsertObjectAsync<T>(IDistributedCache cache, IDatabase database, string tableName, IEnumerable<TableColumn> tableColumns, T dataInfo, Query query = null) where T : Entity
+        public static async Task<int> InsertObjectAsync<T>(IDatabase database, string tableName, IEnumerable<TableColumn> tableColumns, IRedis redis, T dataInfo, Query query = null) where T : Entity
         {
             if (dataInfo == null) return 0;
             dataInfo.Guid = Utilities.GetGuid();
             dataInfo.CreatedDate = DateTime.Now;
             dataInfo.LastModifiedDate = DateTime.Now;
 
-            var setIdentityInsert = false;
+            var identityInsert = false;
             if (dataInfo.Id > 0)
             {
                 if (query != null)
@@ -30,10 +29,7 @@ namespace Datory.Utils
                     var identityCondition = query.GetOneComponent<BasicCondition>("identity");
                     if (identityCondition != null)
                     {
-                        if (database.DatabaseType == DatabaseType.SqlServer)
-                        {
-                            setIdentityInsert = true;
-                        }
+                        identityInsert = true;
                     }
                     else
                     {
@@ -49,18 +45,17 @@ namespace Datory.Utils
             var dictionary = new Dictionary<string, object>();
             foreach (var tableColumn in tableColumns)
             {
-                var value = tableColumn.IsExtend
-                    ? dataInfo.GetExtendColumnValue()
-                    : dataInfo.Get(tableColumn.AttributeName);
-
+                if (!identityInsert && tableColumn.IsIdentity) continue;
+                
+                var value = ValueUtils.GetSqlValue(dataInfo, tableColumn);
                 dictionary[tableColumn.AttributeName] = value;
             }
 
             var xQuery = NewQuery(tableName, query);
             xQuery.AsInsert(dictionary, true);
-            var compileInfo = await CompileAsync(cache, database, tableName, xQuery);
+            var compileInfo = await CompileAsync(database, tableName, redis, xQuery);
 
-            if (setIdentityInsert)
+            if (identityInsert && database.DatabaseType == DatabaseType.SqlServer)
             {
                 compileInfo.Sql = $@"
 SET IDENTITY_INSERT {tableName} ON
@@ -71,12 +66,14 @@ SET IDENTITY_INSERT {tableName} OFF
 
             using (var connection = database.GetConnection())
             {
-                dataInfo.Id = await connection.QueryFirstAsync<int>(compileInfo.Sql, compileInfo.NamedBindings);
-            }
-
-            if (compileInfo.Caching != null && compileInfo.Caching.Action == CachingAction.Set)
-            {
-                await cache.SetAsync(compileInfo.Caching.CacheKey, dataInfo);
+                if (identityInsert)
+                {
+                    await connection.ExecuteAsync(compileInfo.Sql, compileInfo.NamedBindings);
+                }
+                else
+                {
+                    dataInfo.Id = await connection.QueryFirstAsync<int>(compileInfo.Sql, compileInfo.NamedBindings);
+                }
             }
 
             return dataInfo.Id;

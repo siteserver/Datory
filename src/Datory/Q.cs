@@ -1,8 +1,7 @@
 ﻿using System;
-using Datory.Caching;
+using System.Collections.Generic;
 using SqlKata;
 using Datory.Utils;
-using Microsoft.Extensions.Caching.Distributed;
 
 namespace Datory
 {
@@ -13,6 +12,21 @@ namespace Datory
             return new Query();
         }
 
+        public static Query Set(string column, Enum value)
+        {
+            return Set(column, value.GetValue());
+        }
+
+        public static Query Set(string column, IEnumerable<int> list)
+        {
+            return Set(column, Utilities.ToString(list));
+        }
+
+        public static Query Set(string column, IEnumerable<string> list)
+        {
+            return Set(column, Utilities.ToString(list));
+        }
+
         public static Query Set( string column, object value)
         {
             return NewQuery().Set(column, value);
@@ -20,17 +34,17 @@ namespace Datory
 
         public static Query Set(this Query query, string column, Enum value)
         {
-            if (Utilities.EqualsIgnoreCase(column, nameof(Entity.Id)) ||
-                Utilities.EqualsIgnoreCase(column, nameof(Entity.LastModifiedDate))) return query;
+            return Set(query, column, value.GetValue());
+        }
 
-            query.AddComponent("update", new BasicCondition
-            {
-                Column = column,
-                Operator = "=",
-                Value = value.GetValue()
-            });
+        public static Query Set(this Query query, string column, IEnumerable<int> list)
+        {
+            return Set(query, column, Utilities.ToString(list));
+        }
 
-            return query;
+        public static Query Set(this Query query, string column, IEnumerable<string> list)
+        {
+            return Set(query, column, Utilities.ToString(list));
         }
 
         public static Query Set(this Query query, string column, object value)
@@ -218,14 +232,9 @@ namespace Datory
             return NewQuery().From(callback, alias);
         }
 
-        public static Query CachingGet(string cacheKey, DistributedCacheEntryOptions options = null)
+        public static Query CachingGet(string cacheKey)
         {
-            return NewQuery().CachingGet(cacheKey, options);
-        }
-
-        public static Query CachingSet(string cacheKey, DistributedCacheEntryOptions options = null)
-        {
-            return NewQuery().CachingSet(cacheKey, options);
+            return NewQuery().CachingGet(cacheKey);
         }
 
         public static Query CachingRemove(params string[] cacheKeys)

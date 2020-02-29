@@ -25,12 +25,12 @@ namespace Datory
             {
                 if (Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.Id))) continue;
 
-                var value = tableColumn.IsExtend ? dataInfo.GetExtendColumnValue() : dataInfo.Get(tableColumn.AttributeName);
+                var value = ValueUtils.GetSqlValue(dataInfo, tableColumn);
 
                 xQuery.Set(tableColumn.AttributeName, value);
             }
 
-            return await RepositoryUtils.UpdateAllAsync(Cache, Database, TableName, xQuery) > 0;
+            return await RepositoryUtils.UpdateAllAsync(Database, TableName, Redis, xQuery) > 0;
         }
 
         public virtual async Task<bool> UpdateAsync(T dataInfo, string[] columnNames, Query query = null)
@@ -44,7 +44,7 @@ namespace Datory
                 foreach (var columnName in columnNames)
                 {
                     if (Utilities.EqualsIgnoreCase(columnName, nameof(Entity.Id))) continue;
-                    xQuery.Set(columnName, ReflectionUtils.GetValue(dataInfo, columnName));
+                    xQuery.Set(columnName, ValueUtils.GetValue(dataInfo, columnName));
                 }
 
                 //var values = RepositoryUtils.ObjToDict(dataInfo, columnNames, nameof(IEntity.Id));
@@ -52,7 +52,7 @@ namespace Datory
                 //{
                 //    query.Set(value.Key, value.Value);
                 //}
-                return await RepositoryUtils.UpdateAllAsync(Cache, Database, TableName, xQuery) > 0;
+                return await RepositoryUtils.UpdateAllAsync(Database, TableName, Redis, xQuery) > 0;
             }
             if (Utilities.IsGuid(dataInfo.Guid))
             {
@@ -64,7 +64,7 @@ namespace Datory
                 {
                     if (Utilities.EqualsIgnoreCase(columnName, nameof(Entity.Id)) ||
                         Utilities.EqualsIgnoreCase(columnName, nameof(Entity.Guid))) continue;
-                    xQuery.Set(columnName, ReflectionUtils.GetValue(dataInfo, columnName));
+                    xQuery.Set(columnName, ValueUtils.GetValue(dataInfo, columnName));
                 }
 
                 //var values = RepositoryUtils.ObjToDict(dataInfo, columnNames, nameof(IEntity.Id), nameof(IEntity.Guid));
@@ -73,7 +73,7 @@ namespace Datory
                 //    query.Set(value.Key, value.Value);
                 //}
 
-                return await RepositoryUtils.UpdateAllAsync(Cache, Database, TableName, xQuery) > 0;
+                return await RepositoryUtils.UpdateAllAsync(Database, TableName, Redis, xQuery) > 0;
             }
 
             return false;
@@ -81,17 +81,17 @@ namespace Datory
 
         public virtual async Task<int> UpdateAsync(Query query)
         {
-            return await RepositoryUtils.UpdateAllAsync(Cache, Database, TableName, query);
+            return await RepositoryUtils.UpdateAllAsync(Database, TableName, Redis, query);
         }
 
         public virtual async Task<int> IncrementAsync(string columnName, Query query, int num = 1)
         {
-            return await RepositoryUtils.IncrementAllAsync(Cache, Database, TableName, columnName, query, num);
+            return await RepositoryUtils.IncrementAllAsync(Database, TableName, Redis, columnName, query, num);
         }
 
         public virtual async Task<int> DecrementAsync(string columnName, Query query, int num = 1)
         {
-            return await RepositoryUtils.DecrementAllAsync(Cache, Database, TableName, columnName, query, num);
+            return await RepositoryUtils.DecrementAllAsync(Database, TableName, Redis, columnName, query, num);
         }
     }
 }

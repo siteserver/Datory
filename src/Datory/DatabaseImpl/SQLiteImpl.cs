@@ -40,14 +40,14 @@ namespace Datory.DatabaseImpl
             return false;
         }
 
-        public async Task<IList<string>> GetDatabaseNamesAsync(string connectionString)
+        public async Task<List<string>> GetDatabaseNamesAsync(string connectionString)
         {
-            return await Task.FromResult<IList<string>>(new List<string>());
+            return await Task.FromResult(new List<string>());
         }
 
-        public async Task<IList<string>> GetTableNamesAsync(string connectionString)
+        public async Task<List<string>> GetTableNamesAsync(string connectionString)
         {
-            IEnumerable<string> tableNames = null;
+            IEnumerable<string> tableNames;
 
             using (var connection = GetConnection(connectionString))
             {
@@ -146,7 +146,7 @@ namespace Datory.DatabaseImpl
             return dataType;
         }
 
-        public async Task<IList<TableColumn>> GetTableColumnsAsync(string connectionString, string tableName)
+        public async Task<List<TableColumn>> GetTableColumnsAsync(string connectionString, string tableName)
         {
             var list = new List<TableColumn>();
 

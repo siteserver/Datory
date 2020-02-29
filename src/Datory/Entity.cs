@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dapper;
 using Datory.Annotations;
 using Newtonsoft.Json;
 using Datory.Utils;
@@ -8,7 +9,6 @@ using Datory.Utils;
 namespace Datory
 {
     [JsonConverter(typeof(EntityBaseConverter))]
-    [Serializable]
     public class Entity : IEntity
     {
         [DataColumn]
@@ -17,17 +17,20 @@ namespace Datory
         [DataColumn(Length = 50)]
         public string Guid { get; set; }
 
+        [DataColumn(Text = true)]
+        internal string ExtendValues { get; set; }
+
         [DataColumn]
         public DateTime? CreatedDate { get; set; }
 
         [DataColumn]
         public DateTime? LastModifiedDate { get; set; }
 
+        private readonly Type _type;
+
         private readonly List<string> _propertyNames;
 
         private readonly List<string> _columnNames;
-
-        private readonly string _extendColumnName;
 
         private readonly List<string> _dataIgnoreNames;
 
@@ -37,12 +40,21 @@ namespace Datory
 
         public Entity()
         {
-            var type = GetType();
-            _propertyNames = ReflectionUtils.GetPropertyNames(type);
-            _columnNames = ReflectionUtils.GetColumnNames(type);
-            _extendColumnName = ReflectionUtils.GetTableExtendColumnName(type);
-            _dataIgnoreNames = ReflectionUtils.GetDataIgnoreNames(type);
-            _jsonIgnoreNames = ReflectionUtils.GetJsonIgnoreNames(type);
+            _type = GetType();
+            _propertyNames = ReflectionUtils.GetPropertyNames(_type);
+            _columnNames = ReflectionUtils.GetColumnNames(_type);
+            _dataIgnoreNames = ReflectionUtils.GetDataIgnoreNames(_type);
+            _jsonIgnoreNames = ReflectionUtils.GetJsonIgnoreNames(_type);
+            _extendDictionary = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        public Entity(Type type)
+        {
+            _type = type;
+            _propertyNames = ReflectionUtils.GetPropertyNames(_type);
+            _columnNames = ReflectionUtils.GetColumnNames(_type);
+            _dataIgnoreNames = ReflectionUtils.GetDataIgnoreNames(_type);
+            _jsonIgnoreNames = ReflectionUtils.GetJsonIgnoreNames(_type);
             _extendDictionary = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
         }
 
@@ -51,11 +63,25 @@ namespace Datory
             LoadDict(dict);
         }
 
-        public void LoadJson(string json)
+        public void LoadExtend()
         {
-            if (string.IsNullOrEmpty(json)) return;
+            LoadExtend(ExtendValues);
+        }
 
-            LoadDict(Utilities.ToDictionary(json));
+        public void LoadExtend(string extendValue)
+        {
+            if (string.IsNullOrEmpty(extendValue)) return;
+
+            var dict = Utilities.ToDictionary(extendValue);
+            if (dict == null) return;
+
+            foreach (var o in dict)
+            {
+                if (!Utilities.ContainsIgnoreCase(_columnNames, o.Key))
+                {
+                    Set(o.Key, o.Value);
+                }
+            }
         }
 
         public void LoadDict(IDictionary<string, object> dict)
@@ -64,10 +90,6 @@ namespace Datory
 
             foreach (var o in dict)
             {
-                if (Utilities.EqualsIgnoreCase(o.Key, "rules"))
-                {
-                    var value = o.Value;
-                }
                 Set(o.Key, o.Value);
             }
         }
@@ -80,11 +102,6 @@ namespace Datory
         public List<string> GetColumnNames()
         {
             return new List<string>(_columnNames);
-        }
-
-        public string GetExtendColumnName()
-        {
-            return _extendColumnName;
         }
 
         public string GetExtendColumnValue()
@@ -138,7 +155,7 @@ namespace Datory
             }
             foreach (var key in _propertyNames)
             {
-                if (_extendColumnName == key) continue;
+                if (Utilities.IsExtend(key)) continue;
                 if (excludeKeys != null && excludeKeys.Contains(key, StringComparer.OrdinalIgnoreCase)) continue;
 
                 dict[key] = Get(key);
@@ -172,59 +189,25 @@ namespace Datory
 
             if (ContainsIgnoreCase(_propertyNames, name, out var realName))
             {
-                ReflectionUtils.SetValue(this, realName, value);
+                ValueUtils.SetValue(this, realName, value);
             }
             else
             {
                 _extendDictionary[name] = value;
             }
-
-            //if (!string.IsNullOrEmpty(_extendAttribute))
-            //{
-            //    ReflectionUtils.SetValue(this, _extendAttribute, TranslateUtils.JsonSerialize(Dictionary));
-            //}
-
-            //if (StringUtils.EqualsIgnoreCase(_extendAttribute, name))
-            //{
-            //    var dict = GetExtendValue(value as string);
-            //    if (dict != null)
-            //    {
-            //        foreach (var entry in dict)
-            //        {
-            //            if (!_entityAttributes.Contains(entry.Key, StringComparer.OrdinalIgnoreCase))
-            //            {
-            //                Dictionary[entry.Key] = entry.Value;
-            //            }
-            //        }
-            //    }
-
-            //    SetExtendValue();
-            //}
-            //else if (!_entityAttributes.Contains(name, StringComparer.OrdinalIgnoreCase))
-            //{
-            //    SetExtendValue();
-            //}
-
-            //if (_entityAttributes.Contains(name, StringComparer.OrdinalIgnoreCase))
-            //{
-            //    ReflectionUtils.SetValue(this, name, value);
-            //}
-            //else
-            //{
-            //    _dictionary[name] = value;
-            //    if (!string.IsNullOrEmpty(_extendAttribute))
-            //    {
-            //        ReflectionUtils.SetValue(this, _extendAttribute, TranslateUtils.JsonSerialize(_dictionary));
-            //    }
-            //}
         }
 
         public object Get(string name)
         {
             if (string.IsNullOrEmpty(name)) return null;
 
+            if (Utilities.IsExtend(name))
+            {
+                return GetExtendColumnValue();
+            }
+
             return ContainsIgnoreCase(_propertyNames, name, out var realName)
-                ? ReflectionUtils.GetValue(this, realName)
+                ? ValueUtils.GetValue(this, realName)
                 : Utilities.Get(_extendDictionary, name);
         }
 
@@ -233,26 +216,25 @@ namespace Datory
             return Utilities.Get(Get(name), defaultValue);
         }
 
-        // public override bool TryGetMember(GetMemberBinder binder, out object result)
-        // {
-        //     result = Get(binder.Name);
-        //     return true;
-        // }
+        public object Clone()
+        {
+            var dict = ToDictionary();
+            var instance = Activator.CreateInstance(_type);
+            ((Entity)instance).LoadDict(dict);
+            return instance;
+        }
 
-        // public override bool TrySetMember(SetMemberBinder binder, object value)
-        // {
-        //     Set(binder.Name, value);
-        //     return true;
-        // }
+        public T Clone<T>() where T : Entity
+        {
+            var dict = ToDictionary();
+            var instance = (T)Activator.CreateInstance(_type);
+            instance.LoadDict(dict);
+            return instance;
+        }
     }
 
     public class EntityBaseConverter : JsonConverter
     {
-        //public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
         /// <summary>
         /// 确定此实例是否可以转换指定的对象类型。
         /// </summary>
@@ -288,8 +270,13 @@ namespace Datory
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue,
             JsonSerializer serializer)
         {
-            var dict = serializer.Deserialize<Dictionary<string, object>>(reader);
+            //var dict = serializer.Deserialize<Dictionary<string, object>>(reader);
+            //var instance = Activator.CreateInstance(objectType);
+            //((Entity)instance).LoadDict(dict);
+            //return instance;
+
             var instance = Activator.CreateInstance(objectType);
+            var dict = serializer.Deserialize<Dictionary<string, object>>(reader);
             ((Entity)instance).LoadDict(dict);
             return instance;
 

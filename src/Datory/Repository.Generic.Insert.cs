@@ -9,7 +9,7 @@ namespace Datory
     {
         public virtual async Task<int> InsertAsync(T dataInfo, Query query = null)
         {
-            return await RepositoryUtils.InsertObjectAsync(Cache, Database, TableName, TableColumns, dataInfo, query);
+            return await RepositoryUtils.InsertObjectAsync(Database, TableName, TableColumns, Redis, dataInfo, query);
         }
 
         public virtual async Task BulkInsertAsync(IEnumerable<T> items)

@@ -45,7 +45,7 @@ namespace Datory
 
         public virtual async Task<int> DeleteAsync(Query query = null)
         {
-            return await RepositoryUtils.DeleteAllAsync(Cache, Database, TableName, query);
+            return await RepositoryUtils.DeleteAllAsync(Database, TableName, Redis, query);
         }
     }
 }

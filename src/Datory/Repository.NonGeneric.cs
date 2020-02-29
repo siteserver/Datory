@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Microsoft.Extensions.Caching.Distributed;
 
 namespace Datory
 {
@@ -8,7 +7,7 @@ namespace Datory
         public IDatabase Database { get; }
         public string TableName { get; }
         public List<TableColumn> TableColumns { get; }
-        public IDistributedCache Cache { get; }
+        public IRedis Redis { get; }
 
         public Repository(IDatabase database)
         {
@@ -17,12 +16,12 @@ namespace Datory
             TableColumns = null;
         }
 
-        public Repository(IDatabase database, IDistributedCache cache)
+        public Repository(IDatabase database, IRedis redis)
         {
             Database = database;
             TableName = null;
             TableColumns = null;
-            Cache = cache;
+            Redis = redis;
         }
 
         public Repository(IDatabase database, string tableName)
@@ -32,12 +31,12 @@ namespace Datory
             TableColumns = null;
         }
 
-        public Repository(IDatabase database, string tableName, IDistributedCache cache)
+        public Repository(IDatabase database, string tableName, IRedis redis)
         {
             Database = database;
             TableName = tableName;
             TableColumns = null;
-            Cache = cache;
+            Redis = redis;
         }
 
         public Repository(IDatabase database, string tableName, List<TableColumn> tableColumns)
@@ -47,12 +46,12 @@ namespace Datory
             TableColumns = tableColumns;
         }
 
-        public Repository(IDatabase database, string tableName, List<TableColumn> tableColumns, IDistributedCache cache)
+        public Repository(IDatabase database, string tableName, List<TableColumn> tableColumns, IRedis redis)
         {
             Database = database;
             TableName = tableName;
             TableColumns = tableColumns;
-            Cache = cache;
+            Redis = redis;
         }
     }
 }

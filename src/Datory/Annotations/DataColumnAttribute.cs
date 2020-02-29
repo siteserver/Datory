@@ -8,7 +8,5 @@ namespace Datory.Annotations
         public int Length { get; set; }
 
         public bool Text { get; set; }
-
-        public bool Extend { get; set; }
     }
 }

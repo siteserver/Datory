@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 
 [assembly: InternalsVisibleTo("Datory.Tests")]
@@ -14,20 +15,109 @@ namespace Datory.Utils
 {
     public static class Utilities
     {
-        private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
+        public static List<int> GetIntList(string collection, char separator = ',')
+        {
+            var list = new List<int>();
+            if (!string.IsNullOrEmpty(collection))
+            {
+                var array = collection.Split(separator);
+                foreach (var s in array)
+                {
+                    int.TryParse(s.Trim(), out var i);
+                    list.Add(i);
+                }
+            }
+            return list;
+        }
+
+        public static List<int> GetIntList(IEnumerable<int> collection)
+        {
+            return collection == null ? new List<int>() : new List<int>(collection);
+        }
+
+        public static List<int> GetIntList(JArray jArray)
+        {
+            try
+            {
+                return jArray == null ? new List<int>() : jArray.ToObject<List<int>>();
+            }
+            catch
+            {
+                return new List<int>();
+            }
+        }
+
+        public static string ToString(IEnumerable<string> objects, string separator = ",")
+        {
+            return objects != null ? string.Join(separator, objects) : string.Empty;
+        }
+
+        public static string ToString(IEnumerable<int> objects, string separator = ",")
+        {
+            return objects != null ? string.Join(separator, objects) : string.Empty;
+        }
+
+        public static string ToString(IEnumerable<object> objects, string separator = ",")
+        {
+            return objects != null ? string.Join(separator, objects) : string.Empty;
+        }
+
+        public static List<string> GetStringList(string collection, char split = ',')
+        {
+            var list = new List<string>();
+            if (!string.IsNullOrEmpty(collection))
+            {
+                var array = collection.Split(split);
+                foreach (var s in array)
+                {
+                    if (!string.IsNullOrEmpty(s))
+                    {
+                        list.Add(s);
+                    }
+                }
+            }
+            return list;
+        }
+
+        public static List<string> GetStringList(IEnumerable<string> collection)
+        {
+            return collection == null ? new List<string>() : new List<string>(collection);
+        }
+
+        public static List<string> GetStringList(JArray jArray)
+        {
+            try
+            {
+                return jArray == null ? new List<string>() : jArray.ToObject<List<string>>();
+            }
+            catch
+            {
+                return new List<string>();
+            }
+        }
+
+        public static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
         {
             ContractResolver = new CamelCasePropertyNamesContractResolver(),
             Converters = new List<JsonConverter>
             {
                 new IsoDateTimeConverter {DateTimeFormat = "yyyy-MM-dd HH:mm:ss"}
-            },
-            DateTimeZoneHandling = DateTimeZoneHandling.Utc
+            }
         };
 
         public static string JsonSerialize(object obj)
         {
+            if (obj == null) return string.Empty;
+
             try
             {
+                //var settings = new JsonSerializerSettings
+                //{
+                //    ContractResolver = new CamelCasePropertyNamesContractResolver()
+                //};
+                //var timeFormat = new IsoDateTimeConverter {DateTimeFormat = "yyyy-MM-dd HH:mm:ss"};
+                //settings.Converters.Add(timeFormat);
+
                 return JsonConvert.SerializeObject(obj, JsonSettings);
             }
             catch
@@ -36,10 +126,16 @@ namespace Datory.Utils
             }
         }
 
-        public static T JsonDeserialize<T>(string json, T defaultValue = default(T))
+        public static T JsonDeserialize<T>(string json, T defaultValue = default)
         {
+            if (string.IsNullOrEmpty(json)) return defaultValue;
+
             try
             {
+                //var settings = new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() };
+                //var timeFormat = new IsoDateTimeConverter { DateTimeFormat = "yyyy-MM-dd HH:mm:ss" };
+                //settings.Converters.Add(timeFormat);
+
                 return JsonConvert.DeserializeObject<T>(json, JsonSettings);
             }
             catch
@@ -116,16 +212,6 @@ namespace Datory.Utils
             return dict;
         }
 
-        public static IList<string> StringCollectionToStringList(string collection, char split = ',')
-        {
-            var list = new List<string>();
-            if (string.IsNullOrEmpty(collection)) return list;
-
-            var array = collection.Split(split);
-            list.AddRange(array);
-            return list;
-        }
-
         public static int ToInt(string intStr, int defaultValue = 0)
         {
             if (!int.TryParse(intStr?.Trim().TrimStart('0'), out var i))
@@ -179,6 +265,11 @@ namespace Datory.Utils
             return a.Equals(b, StringComparison.OrdinalIgnoreCase);
         }
 
+        public static bool IsExtend(string propertyName)
+        {
+            return EqualsIgnoreCase(propertyName, "ExtendValues");
+        }
+
         public static bool ContainsIgnoreCase(string text, string inner)
         {
             if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(inner)) return false;
@@ -211,7 +302,7 @@ namespace Datory.Utils
                 return connectionString.Substring(index1 + 13, index2 - index1 - 13);
             }
 
-            foreach (var pair in StringCollectionToStringList(connectionString, ';'))
+            foreach (var pair in GetStringList(connectionString, ';'))
             {
                 if (string.IsNullOrEmpty(pair) || pair.IndexOf("=", StringComparison.Ordinal) == -1) continue;
                 var key = pair.Substring(0, pair.IndexOf("=", StringComparison.Ordinal));
@@ -229,7 +320,7 @@ namespace Datory.Utils
 
         public static string GetConnectionStringUserName(string connectionString)
         {
-            foreach (var pair in StringCollectionToStringList(connectionString, ';'))
+            foreach (var pair in GetStringList(connectionString, ';'))
             {
                 if (string.IsNullOrEmpty(pair) || pair.IndexOf("=", StringComparison.Ordinal) == -1) continue;
                 var key = pair.Substring(0, pair.IndexOf("=", StringComparison.Ordinal));
@@ -243,6 +334,50 @@ namespace Datory.Utils
             }
 
             return string.Empty;
+        }
+
+        public static (string Host, int Port, string Password, int Database, bool AllowAdmin) GetRedisConnectionString(string connectionString)
+        {
+            var host = "localhost";
+            var post = 6379;
+            var password = string.Empty;
+            var database = 0;
+            var allowAdmin = true;
+
+            foreach (var pair in GetStringList(connectionString))
+            {
+                if (string.IsNullOrEmpty(pair)) continue;
+
+                if (pair.IndexOf("=", StringComparison.Ordinal) != -1)
+                {
+                    var key = pair.Substring(0, pair.IndexOf("=", StringComparison.Ordinal));
+                    var value = pair.Substring(pair.IndexOf("=", StringComparison.Ordinal) + 1);
+
+                    if (EqualsIgnoreCase(key, "password"))
+                    {
+                        password = value;
+                    }
+                    else if (EqualsIgnoreCase(key, "allowAdmin"))
+                    {
+                        allowAdmin = ToBool(value);
+                    }
+                    else if (EqualsIgnoreCase(key, "database"))
+                    {
+                        database = ToInt(value);
+                    }
+                }
+                else if (pair.IndexOf(":", StringComparison.Ordinal) != -1)
+                {
+                    host = pair.Substring(0, pair.IndexOf(":", StringComparison.Ordinal));
+                    post = ToInt(pair.Substring(pair.IndexOf(":", StringComparison.Ordinal) + 1));
+                }
+                else
+                {
+                    host = pair;
+                }
+            }
+
+            return (host, post, password, database, allowAdmin);
         }
 
         public static T ToEnum<T>(string value, T defaultValue) where T : struct

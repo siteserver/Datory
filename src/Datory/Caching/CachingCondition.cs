@@ -1,12 +1,10 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
-using SqlKata;
+﻿using SqlKata;
 
 namespace Datory.Caching
 {
     internal class CachingCondition : AbstractClause
     {
         public CachingAction Action { get; set; }
-        public DistributedCacheEntryOptions Options { get; set; }
 
         public string CacheKey { get; set; }
 
@@ -20,7 +18,6 @@ namespace Datory.Caching
             {
                 Engine = Engine,
                 Action = Action,
-                Options = Options,
                 CacheKey = CacheKey,
                 CacheKeysToRemove = CacheKeysToRemove,
                 Component = Component,

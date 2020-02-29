@@ -29,7 +29,5 @@ namespace Datory
         /// 是否为自增长字段。
         /// </summary>
         public bool IsIdentity { get; set; }
-
-        public bool IsExtend { get; set; }
     }
 }
