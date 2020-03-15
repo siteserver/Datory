@@ -233,7 +233,9 @@ namespace Datory.Utils
 
         internal static string GetDropColumnsSqlString(DatabaseType databaseType, string tableName, string columnName)
         {
-            return $"ALTER TABLE {GetQuotedIdentifier(databaseType, tableName)} DROP COLUMN {GetQuotedIdentifier(databaseType, columnName)}";
+            return databaseType == DatabaseType.SQLite
+                ? string.Empty
+                : $"ALTER TABLE {GetQuotedIdentifier(databaseType, tableName)} DROP COLUMN {GetQuotedIdentifier(databaseType, columnName)}";
         }
     }
 }

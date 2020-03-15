@@ -228,7 +228,11 @@ namespace Datory
                 {
                     if (Utilities.ContainsIgnoreCase(dropColumnNames, columnName))
                     {
-                        list.Add(DbUtils.GetDropColumnsSqlString(DatabaseType, tableName, columnName));
+                        var sql = DbUtils.GetDropColumnsSqlString(DatabaseType, tableName, columnName);
+                        if (!string.IsNullOrEmpty(sql))
+                        {
+                            list.Add(sql);
+                        }
                     }
                 }
             }
