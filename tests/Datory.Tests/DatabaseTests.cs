@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Datory.Tests.Utils;
 using Xunit;
 using Xunit.Abstractions;
@@ -17,5 +18,15 @@ namespace Datory.Tests
 
             _output.WriteLine(Environment.MachineName);
         }
+
+        public async Task IsConnectionWorksAsync()
+        {
+            var (isConnectionWorks, errorMessage) = await _fixture.Database.IsConnectionWorksAsync();
+
+            Assert.True(isConnectionWorks);
+
+            _output.WriteLine(_fixture.Database.ConnectionString);
+        }
+
     }
 }

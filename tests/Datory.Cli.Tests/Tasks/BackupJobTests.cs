@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using Datory.Cli.Core;
 using Datory.Cli.Tasks;
-using Datory.Tests.Utils;
+using Datory.Tests;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -16,11 +16,8 @@ namespace Datory.Cli.Tests.Tasks
             _output = output;
         }
 
-        [SkippableFact]
         public async Task TestExecuteAsync()
         {
-            Skip.IfNot(TestEnv.IsTestMachine);
-
             Assert.Equal("backup", BackupJob.CommandName);
 
             var context = new JobContextImpl(BackupJob.CommandName, new [] {"-d", "backup"}, null);

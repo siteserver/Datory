@@ -2,17 +2,15 @@
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using SqlKata;
 using Datory.Tests.Mocks;
-using Datory.Tests.Utils;
 using Datory.Utils;
+using SqlKata;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Datory.Tests.Core
+namespace Datory.Tests
 {
-    public class GenericRepositoryTest : IClassFixture<UnitTestsFixture>, IDisposable
+    public class GenericRepositoryTest : IClassFixture<UnitTestsFixture>
     {
         private readonly ITestOutputHelper _output;
         private readonly Repository<TestTableInfo> _repository;
@@ -23,24 +21,14 @@ namespace Datory.Tests.Core
             _repository = new Repository<TestTableInfo>(fixture.Database);
         }
 
-        public void Dispose()
-        {
-            if (!TestEnv.IsTestMachine) return;
-
-            //_fixture.Db.DropTable(_repository.TableName);
-        }
-
-        [SkippableFact]
         public void Start()
         {
-            Skip.IfNot(TestEnv.IsTestMachine);
-
             var tableName = _repository.TableName;
             var tableColumns = _repository.TableColumns;
 
             Assert.Equal("TestTable", tableName);
             Assert.NotNull(tableColumns);
-            Assert.Equal(12, tableColumns.Count);
+            Assert.Equal(13, tableColumns.Count);
 
             var varChar100Column = tableColumns.FirstOrDefault(x => x.AttributeName == nameof(TestTableInfo.TypeVarChar100));
             Assert.NotNull(varChar100Column);
@@ -67,10 +55,9 @@ namespace Datory.Tests.Core
             Assert.Null(lockedColumn);
         }
 
-        [SkippableFact]
         public async Task InsertTest()
         {
-            Skip.IfNot(TestEnv.IsTestMachine);
+            await _repository.DeleteAsync();
 
             var id = await _repository.InsertAsync(null);
             Assert.Equal(0, id);
@@ -80,7 +67,7 @@ namespace Datory.Tests.Core
 
             var dataInfo = new TestTableInfo();
             await _repository.InsertAsync(dataInfo);
-            Assert.Equal(1, dataInfo.Id);
+            Assert.True(dataInfo.Id > 0);
             Assert.True(Utilities.IsGuid(dataInfo.Guid));
             Assert.True(dataInfo.LastModifiedDate.HasValue);
             Assert.Null(dataInfo.TypeVarChar100);
@@ -94,7 +81,7 @@ namespace Datory.Tests.Core
 
             dataInfo = new TestTableInfo();
             await _repository.InsertAsync(dataInfo);
-            Assert.Equal(2, dataInfo.Id);
+            Assert.True(dataInfo.Id > 0);
             Assert.True(Utilities.IsGuid(dataInfo.Guid));
 
             dataInfo = new TestTableInfo
@@ -106,7 +93,7 @@ namespace Datory.Tests.Core
                 Locked = true
             };
             await _repository.InsertAsync(dataInfo);
-            Assert.Equal(3, dataInfo.Id);
+            Assert.True(dataInfo.Id > 0);
             Assert.True(Utilities.IsGuid(dataInfo.Guid));
             Assert.True(dataInfo.LastModifiedDate.HasValue);
             Assert.Equal("string", dataInfo.TypeVarChar100);
@@ -120,37 +107,19 @@ namespace Datory.Tests.Core
             _output.WriteLine(dataInfo.Guid);
             _output.WriteLine(dataInfo.LastModifiedDate.ToString());
 
-            dataInfo = await _repository.GetAsync(1);
+            dataInfo = await _repository.GetAsync(dataInfo.Guid);
             Assert.NotNull(dataInfo);
-            Assert.Equal(1, dataInfo.Id);
             Assert.True(Utilities.IsGuid(dataInfo.Guid));
             Assert.True(dataInfo.LastModifiedDate.HasValue);
-            Assert.Null(dataInfo.TypeVarChar100);
             Assert.Null(dataInfo.TypeVarCharDefault);
             Assert.Null(dataInfo.Content);
-            Assert.Equal(0, dataInfo.Num);
             Assert.Equal(0, dataInfo.Currency);
-            Assert.False(dataInfo.Date.HasValue);
-            Assert.True(dataInfo.Date == null);
 
             _output.WriteLine(dataInfo.Guid);
             _output.WriteLine(dataInfo.LastModifiedDate.ToString());
 
-            dataInfo = await _repository.GetAsync(3);
+            dataInfo = await _repository.GetAsync(dataInfo.Guid);
             Assert.NotNull(dataInfo);
-            Assert.Equal(3, dataInfo.Id);
-            Assert.True(Utilities.IsGuid(dataInfo.Guid));
-            Assert.True(dataInfo.LastModifiedDate.HasValue);
-            Assert.Equal("string", dataInfo.TypeVarChar100);
-            Assert.Null(dataInfo.TypeVarCharDefault);
-            Assert.Null(dataInfo.Content);
-            Assert.Equal(-100, dataInfo.Num);
-            Assert.Equal(0, dataInfo.Currency);
-            Assert.True(dataInfo.Date.HasValue);
-
-            dataInfo = await _repository.GetAsync(new Query().Where(Attr.TypeVarChar100, "string"));
-            Assert.NotNull(dataInfo);
-            Assert.Equal(3, dataInfo.Id);
             Assert.True(Utilities.IsGuid(dataInfo.Guid));
             Assert.True(dataInfo.LastModifiedDate.HasValue);
             Assert.Equal("string", dataInfo.TypeVarChar100);
@@ -162,19 +131,6 @@ namespace Datory.Tests.Core
 
             dataInfo = await _repository.GetAsync(dataInfo.Guid);
             Assert.NotNull(dataInfo);
-            Assert.Equal(3, dataInfo.Id);
-            Assert.True(Utilities.IsGuid(dataInfo.Guid));
-            Assert.True(dataInfo.LastModifiedDate.HasValue);
-            Assert.Equal("string", dataInfo.TypeVarChar100);
-            Assert.Null(dataInfo.TypeVarCharDefault);
-            Assert.Null(dataInfo.Content);
-            Assert.Equal(-100, dataInfo.Num);
-            Assert.Equal(0, dataInfo.Currency);
-            Assert.True(dataInfo.Date.HasValue);
-
-            dataInfo = await _repository.GetAsync(dataInfo.Guid);
-            Assert.NotNull(dataInfo);
-            Assert.Equal(3, dataInfo.Id);
             Assert.True(Utilities.IsGuid(dataInfo.Guid));
             Assert.True(dataInfo.LastModifiedDate.HasValue);
             Assert.Equal("string", dataInfo.TypeVarChar100);
@@ -196,14 +152,11 @@ namespace Datory.Tests.Core
 
             exists = await _repository.ExistsAsync(new Query());
             Assert.True(exists);
-
-            await _repository.DeleteAsync();
         }
 
-        [SkippableFact]
         public async Task TestCount()
         {
-            Skip.IfNot(TestEnv.IsTestMachine);
+            await _repository.DeleteAsync();
 
             await _repository.InsertAsync(new TestTableInfo
             {
@@ -222,18 +175,15 @@ namespace Datory.Tests.Core
             });
 
             var count = await _repository.CountAsync();
-            Assert.Equal(4, count);
+            Assert.Equal(2, count);
 
             count = await _repository.CountAsync(new Query().Where("TypeVarChar100", "test"));
             Assert.Equal(1, count);
-
-            await _repository.DeleteAsync();
         }
 
-        [SkippableFact]
         public async Task TestGetValue()
         {
-            Skip.IfNot(TestEnv.IsTestMachine);
+            await _repository.DeleteAsync();
 
             await _repository.InsertAsync(new TestTableInfo
             {
@@ -254,14 +204,11 @@ namespace Datory.Tests.Core
                 .Where("Guid", guid));
             Assert.True(lastModifiedDate.HasValue);
             _output.WriteLine(lastModifiedDate.Value.ToString(CultureInfo.InvariantCulture));
-
-            await _repository.DeleteAsync();
         }
 
-        [SkippableFact]
         public async Task TestGetValues()
         {
-            Skip.IfNot(TestEnv.IsTestMachine);
+            await _repository.DeleteAsync();
 
             await _repository.InsertAsync(new TestTableInfo
             {
@@ -283,14 +230,11 @@ namespace Datory.Tests.Core
             var lastModifiedDateList = await _repository.GetAllAsync<DateTime?>(new Query()
                 .Select(nameof(TestTableInfo.LastModifiedDate)));
             lastModifiedDateList.ToList().ForEach(x => Assert.True(x.HasValue));
-
-            await _repository.DeleteAsync();
         }
 
-        [SkippableFact]
         public async Task TestGetAll()
         {
-            Skip.IfNot(TestEnv.IsTestMachine);
+            await _repository.DeleteAsync();
 
             await _repository.InsertAsync(new TestTableInfo
             {
@@ -310,10 +254,9 @@ namespace Datory.Tests.Core
             Assert.Single(list);
         }
 
-        [SkippableFact]
         public async Task TestUpdate()
         {
-            Skip.IfNot(TestEnv.IsTestMachine);
+            await _repository.DeleteAsync();
 
             await _repository.InsertAsync(new TestTableInfo
             {
@@ -351,14 +294,11 @@ namespace Datory.Tests.Core
 
             updated = await _repository.UpdateAsync((TestTableInfo)null);
             Assert.False(updated);
-
-            await _repository.DeleteAsync();
         }
 
-        [SkippableFact]
         public async Task TestUpdateWithParameters()
         {
-            Skip.IfNot(TestEnv.IsTestMachine);
+            await _repository.DeleteAsync();
 
             await _repository.InsertAsync(new TestTableInfo
             {
@@ -370,20 +310,24 @@ namespace Datory.Tests.Core
             });
 
             var lastModified = await _repository.GetAsync<DateTime?>(new Query()
-                .Select(nameof(Entity.LastModifiedDate)).Where("Id", 1));
+                .Select(nameof(Entity.LastModifiedDate))
+                .Where("TypeVarChar100", "str1")
+            );
             Assert.True(lastModified.HasValue);
 
             var updated = await _repository.UpdateAsync(new Query()
                 .Set("Content", "new content2")
                 .Set("LastModifiedDate", DateTime.Now.AddDays(-1))
-                .Where(nameof(Attr.Id), 1));
-            Assert.True(updated == 1);
+                .Where("TypeVarChar100", "str1")
+            );
+            Assert.True(updated >= 1);
 
-            var dataInfo = await _repository.GetAsync(1);
+            var dataInfo = await _repository.GetAsync(new Query()
+                .Where("TypeVarChar100", "str1")
+            );
             Assert.True(dataInfo.LastModifiedDate.HasValue);
             var lastModified2 = dataInfo.LastModifiedDate.Value.Ticks;
 
-            Assert.Equal(1, dataInfo.Id);
             Assert.True(Utilities.IsGuid(dataInfo.Guid));
             Assert.True(dataInfo.LastModifiedDate.HasValue);
             Assert.NotNull(dataInfo.TypeVarChar100);
@@ -395,17 +339,11 @@ namespace Datory.Tests.Core
             Assert.True(dataInfo.Date == null);
 
             Assert.True(lastModified2 > lastModified.Value.Ticks);
-
-            updated = await _repository.UpdateAsync(new Query());
-            Assert.True(updated == 2);
-
-            await _repository.DeleteAsync();
         }
 
-        [SkippableFact]
         public async Task TestUpdateAll()
         {
-            Skip.IfNot(TestEnv.IsTestMachine);
+            await _repository.DeleteAsync();
 
             await _repository.InsertAsync(new TestTableInfo
             {
@@ -439,42 +377,46 @@ namespace Datory.Tests.Core
             var lastModified2 = dataInfo.LastModifiedDate.Value.Ticks;
 
             Assert.True(lastModified2 > lastModified.Value.Ticks);
-
-            await _repository.DeleteAsync();
         }
 
-        [SkippableFact]
         public async Task TestIncrementAll()
         {
-            Skip.IfNot(TestEnv.IsTestMachine);
+            await _repository.DeleteAsync();
 
             await _repository.InsertAsync(new TestTableInfo
             {
                 TypeVarChar100 = "str1"
             });
 
-            var dataInfo = await _repository.GetAsync(Q.Where("TypeVarChar100", "str1"));
+            var dataInfo = await _repository.GetAsync(Q
+                .Where("TypeVarChar100", "str1")
+            );
             Assert.Equal(0, dataInfo.Num);
 
-            var affected = await _repository.IncrementAsync(Attr.Num, Q.Where("TypeVarChar100", "str1"));
+            var affected = await _repository.IncrementAsync(Attr.Num, Q
+                .Where("TypeVarChar100", "str1")
+            );
             Assert.True(affected == 1);
 
-            dataInfo = await _repository.GetAsync(Q.Where("TypeVarChar100", "str1"));
+            dataInfo = await _repository.GetAsync(Q
+                .Where("TypeVarChar100", "str1")
+            );
             Assert.Equal(1, dataInfo.Num);
 
-            affected = await _repository.DecrementAsync(Attr.Num, Q.Where(Attr.Id, 1));
+            affected = await _repository.DecrementAsync(Attr.Num, Q
+                .Where("TypeVarChar100", "str1")
+            );
             Assert.True(affected == 1);
 
-            dataInfo = await _repository.GetAsync(Q.Where("TypeVarChar100", "str1"));
+            dataInfo = await _repository.GetAsync(Q
+                .Where("TypeVarChar100", "str1")
+            );
             Assert.Equal(0, dataInfo.Num);
-
-            await _repository.DeleteAsync();
         }
 
-        [SkippableFact]
         public async Task TestDelete()
         {
-            Skip.IfNot(TestEnv.IsTestMachine);
+            await _repository.DeleteAsync();
 
             await _repository.InsertAsync(new TestTableInfo
             {
@@ -483,10 +425,6 @@ namespace Datory.Tests.Core
 
             var deleted = await _repository.DeleteAsync(Q.Where("TypeVarChar100", "str"));
             Assert.Equal(1, deleted);
-
-            Assert.False(await _repository.DeleteAsync(1));
-
-            await _repository.DeleteAsync();
         }
     }
 }

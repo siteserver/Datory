@@ -1,5 +1,10 @@
 # Cms-specific files
 
+config.mysql.json
+config.sqlserver.json
+config.postgresql.json
+config.oracle.json
+config.sqlite.json
 *.sqlite
 src/Datory.Api/themes/
 src/Datory.Api/wwwroot/

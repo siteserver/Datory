@@ -89,6 +89,28 @@ namespace Datory
             return conn;
         }
 
+        public async Task<(bool IsConnectionWorks, string ErrorMessage)> IsConnectionWorksAsync()
+        {
+            var retVal = false;
+            var errorMessage = string.Empty;
+            try
+            {
+                using var connection = GetConnection();
+                await connection.OpenAsync();
+                if (connection.State == ConnectionState.Open)
+                {
+                    retVal = true;
+                    connection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+            }
+
+            return (retVal, errorMessage);
+        }
+
         public async Task<bool> IsTableExistsAsync(string tableName)
         {
             bool exists;
@@ -143,28 +165,6 @@ namespace Datory
             }
 
             return exists;
-        }
-
-        public async Task<(bool IsConnectionWorks, string ErrorMessage)> IsConnectionWorksAsync()
-        {
-            var retVal = false;
-            var errorMessage = string.Empty;
-            try
-            {
-                using var connection = GetConnection();
-                await connection.OpenAsync();
-                if (connection.State == ConnectionState.Open)
-                {
-                    retVal = true;
-                    connection.Close();
-                }
-            }
-            catch (Exception ex)
-            {
-                errorMessage = ex.Message;
-            }
-
-            return (retVal, errorMessage);
         }
 
         public async Task<string> AddIdentityColumnIdIfNotExistsAsync(string tableName, IList<TableColumn> columns)

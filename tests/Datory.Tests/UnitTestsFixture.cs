@@ -9,7 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace Datory.Tests.Utils
+namespace Datory.Tests
 {
     // https://mderriey.com/2017/09/04/async-lifetime-with-xunit/
     public class UnitTestsFixture : IAsyncLifetime
@@ -44,25 +44,17 @@ namespace Datory.Tests.Utils
 
         public async Task InitializeAsync()
         {
-            if (!TestEnv.IsTestMachine) return;
-
             var repository = new Repository<TestTableInfo>(Database);
             var isExists = await Database.IsTableExistsAsync(repository.TableName);
-            if (isExists)
+            if (!isExists)
             {
-                await Database.DropTableAsync(repository.TableName);
+                await Database.CreateTableAsync(repository.TableName, repository.TableColumns);
             }
-
-            await Database.CreateTableAsync(repository.TableName, repository.TableColumns);
         }
 
-        public async Task DisposeAsync()
+        public Task DisposeAsync()
         {
-            var tableNames = await Database.GetTableNamesAsync();
-            foreach (var tableName in tableNames)
-            {
-                await Database.DropTableAsync(tableName);
-            }
+            return Task.CompletedTask;
         }
     }
 }

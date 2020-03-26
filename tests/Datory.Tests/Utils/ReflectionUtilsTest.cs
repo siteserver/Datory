@@ -1,7 +1,7 @@
 ﻿using Datory.Utils;
 using Xunit;
 
-namespace Datory.Tests.Core
+namespace Datory.Tests.Utils
 {
     public class ReflectionUtilsTest
     {
