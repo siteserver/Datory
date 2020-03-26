@@ -6,19 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="config.sqlite.json" />
-    <None Remove="config.sqlserver.json" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="config.sqlite.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-    <Content Include="config.sqlserver.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
     <Content Include="config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
