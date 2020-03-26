@@ -1,6 +1,6 @@
 {
   "Database": {
-    "Type": "SqlServer",
-    "ConnectionString": "Server=47.108.133.16;Uid=sa;Pwd=BRtech88;"
+    "Type": "SQLite",
+    "ConnectionString": "Data Source=~/database.sqlite;Version=3;"
   }
 }
