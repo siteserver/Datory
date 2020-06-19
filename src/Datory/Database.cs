@@ -29,13 +29,6 @@ namespace Datory
                     connectionString = connectionString.TrimEnd(';') + ";CharSet=utf8;";
                 }
             }
-            else if (databaseType == DatabaseType.Oracle)
-            {
-                if (!Utilities.ContainsIgnoreCase(connectionString, "pooling="))
-                {
-                    connectionString = connectionString.TrimEnd(';') + ";pooling=false;";
-                }
-            }
             else if (databaseType == DatabaseType.SQLite)
             {
                 if (connectionString.Contains("=~/"))
@@ -58,7 +51,7 @@ namespace Datory
 
         public string ConnectionString { get; }
 
-        public string DatabaseName => Utilities.GetConnectionStringDatabase(DatabaseType, ConnectionString);
+        public string DatabaseName => Utilities.GetConnectionStringDatabase(ConnectionString);
 
         public DbConnection GetConnection()
         {
@@ -76,10 +69,6 @@ namespace Datory
             else if (DatabaseType == DatabaseType.PostgreSql)
             {
                 conn = PostgreSqlImpl.Instance.GetConnection(ConnectionString);
-            }
-            else if (DatabaseType == DatabaseType.Oracle)
-            {
-                conn = OracleImpl.Instance.GetConnection(ConnectionString);
             }
             else if (DatabaseType == DatabaseType.SQLite)
             {
@@ -115,26 +104,14 @@ namespace Datory
         {
             bool exists;
 
-            if (DatabaseType == DatabaseType.Oracle)
-            {
-                tableName = tableName.ToUpper();
-            }
-            else if (DatabaseType == DatabaseType.MySql || DatabaseType == DatabaseType.PostgreSql)
+            if (DatabaseType == DatabaseType.MySql || DatabaseType == DatabaseType.PostgreSql)
             {
                 tableName = tableName.ToLower();
             }
 
             try
             {
-                if (DatabaseType == DatabaseType.Oracle)
-                {
-                    var userName = Utilities.GetConnectionStringUserName(ConnectionString);
-                    var sql = $"SELECT COUNT(*) FROM ALL_OBJECTS WHERE OBJECT_TYPE = 'TABLE' AND OWNER = '{userName.ToUpper()}' and OBJECT_NAME = '{tableName}'";
-
-                    using var connection = GetConnection();
-                    exists = await connection.ExecuteScalarAsync<int>(sql) == 1;
-                }
-                else if (DatabaseType == DatabaseType.SQLite)
+                if (DatabaseType == DatabaseType.SQLite)
                 {
                     var sql = $"SELECT count(*) FROM sqlite_master WHERE type='table' AND name='{tableName}'";
 
@@ -276,6 +253,10 @@ namespace Datory
                 {
                     tableColumn.DataType = DataType.DateTime;
                 }
+                else if (Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.ExtendValues)))
+                {
+                    tableColumn.DataType = DataType.Text;
+                }
             }
 
             foreach (var tableColumn in tableColumns)
@@ -295,6 +276,10 @@ namespace Datory
                 if (tableColumn.DataType == DataType.VarChar && tableColumn.DataLength == 0)
                 {
                     tableColumn.DataLength = DbUtils.VarCharDefaultLength;
+                }
+                else if (tableColumn.DataType == DataType.VarChar && tableColumn.DataLength == -1)
+                {
+                    tableColumn.DataType = DataType.Text;
                 }
 
                 var columnSql = DbUtils.GetColumnSqlString(DatabaseType, tableColumn);
@@ -381,10 +366,50 @@ namespace Datory
             return ReflectionUtils.GetTableColumns(typeof(T));
         }
 
-        public async Task DropTableAsync(string tableName)
+        public List<TableColumn> GetTableColumns(IList<TableColumn> tableColumns)
         {
-            using var connection = GetConnection();
-            await connection.ExecuteAsync($"DROP TABLE {DbUtils.GetQuotedIdentifier(DatabaseType, tableName)}");
+            var columns = new List<TableColumn>
+            {
+                new TableColumn
+                {
+                    AttributeName = nameof(Entity.Id),
+                    DataType = DataType.Integer,
+                    IsIdentity = true,
+                    IsPrimaryKey = true
+                },
+                new TableColumn
+                {
+                    AttributeName = nameof(Entity.Guid),
+                    DataType = DataType.VarChar,
+                    DataLength = 50
+                },
+                new TableColumn
+                {
+                    AttributeName = nameof(Entity.CreatedDate),
+                    DataType = DataType.DateTime
+                },
+                new TableColumn
+                {
+                    AttributeName = nameof(Entity.LastModifiedDate),
+                    DataType = DataType.DateTime
+                },
+                new TableColumn
+                {
+                    AttributeName = nameof(Entity.ExtendValues),
+                    DataType = DataType.Text
+                }
+            };
+            if (tableColumns != null)
+            {
+                columns.AddRange(tableColumns.Where(tableColumn =>
+                    !Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.Id)) &&
+                    !Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.Guid)) &&
+                    !Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.CreatedDate)) &&
+                    !Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.LastModifiedDate)) &&
+                    !Utilities.EqualsIgnoreCase(tableColumn.AttributeName, nameof(Entity.ExtendValues))));
+            }
+
+            return columns;
         }
 
         public async Task<List<TableColumn>> GetTableColumnsAsync(string tableName)
@@ -403,16 +428,18 @@ namespace Datory
             {
                 list = await PostgreSqlImpl.Instance.GetTableColumnsAsync(ConnectionString, tableName);
             }
-            else if (DatabaseType == DatabaseType.Oracle)
-            {
-                list = await OracleImpl.Instance.GetTableColumnsAsync(ConnectionString, tableName);
-            }
             else if (DatabaseType == DatabaseType.SQLite)
             {
                 list = await SQLiteImpl.Instance.GetTableColumnsAsync(ConnectionString, tableName);
             }
 
             return list;
+        }
+
+        public async Task DropTableAsync(string tableName)
+        {
+            using var connection = GetConnection();
+            await connection.ExecuteAsync($"DROP TABLE {DbUtils.GetQuotedIdentifier(DatabaseType, tableName)}");
         }
 
         public async Task<List<string>> GetDatabaseNamesAsync()
@@ -430,10 +457,6 @@ namespace Datory
             else if (DatabaseType == DatabaseType.PostgreSql)
             {
                 tableNames = await PostgreSqlImpl.Instance.GetDatabaseNamesAsync(ConnectionString);
-            }
-            else if (DatabaseType == DatabaseType.Oracle)
-            {
-                tableNames = await OracleImpl.Instance.GetDatabaseNamesAsync(ConnectionString);
             }
             else if (DatabaseType == DatabaseType.SQLite)
             {
@@ -458,10 +481,6 @@ namespace Datory
             else if (DatabaseType == DatabaseType.PostgreSql)
             {
                 tableNames = await PostgreSqlImpl.Instance.GetTableNamesAsync(ConnectionString);
-            }
-            else if (DatabaseType == DatabaseType.Oracle)
-            {
-                tableNames = await OracleImpl.Instance.GetTableNamesAsync(ConnectionString);
             }
             else if (DatabaseType == DatabaseType.SQLite)
             {

@@ -40,7 +40,7 @@
       secure: AtMC4UpS2DWAJIibboq8qPdfBJFvoiPsO7KYNZ5Dpfe7Cr/X+5wV0cLx3Nl9QZCl
     skip_symbols: false
     symbol_server: # remove to push symbols to SymbolSource.org
-    artifact: /.*\.nupkg/
+    artifact: Datory.nupkg
 
 # configuration for "dev" branch
 - branches:
@@ -84,4 +84,4 @@
       secure: AtMC4UpS2DWAJIibboq8qPdfBJFvoiPsO7KYNZ5Dpfe7Cr/X+5wV0cLx3Nl9QZCl
     skip_symbols: false
     symbol_server: # remove to push symbols to SymbolSource.org
-    artifact: /.*\.nupkg/
+    artifact: Datory.nupkg

@@ -1,4 +1,4 @@
-﻿using System.IO;
+﻿using Datory.Cli.Utils;
 
 namespace Datory.Cli.Core
 {
@@ -8,19 +8,25 @@ namespace Datory.Cli.Core
 
         public TreeInfo(string contentRootPath, string directory)
         {
-            DirectoryPath = Path.Combine(contentRootPath, directory);
+            DirectoryPath = PathUtils.Combine(contentRootPath, directory);
         }
 
-        public string TablesFilePath => Path.Combine(DirectoryPath, "_tables.json");
+        public string TablesFilePath => PathUtils.Combine(DirectoryPath, "_tables.json");
+
+        public void CreateTableDirectoryPath(string tableName)
+        {
+            var path = PathUtils.Combine(DirectoryPath, tableName);
+            DirectoryUtils.CreateDirectoryIfNotExists(path);
+        }
 
         public string GetTableMetadataFilePath(string tableName)
         {
-            return Path.Combine(DirectoryPath, tableName, "_metadata.json");
+            return PathUtils.Combine(DirectoryPath, tableName, "_metadata.json");
         }
 
         public string GetTableContentFilePath(string tableName, string fileName)
         {
-            return Path.Combine(DirectoryPath, tableName, fileName);
+            return PathUtils.Combine(DirectoryPath, tableName, fileName);
         }
     }
 }

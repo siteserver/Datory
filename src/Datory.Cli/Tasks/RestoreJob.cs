@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using Dapper;
 using Datory.Cli.Abstractions;
 using Datory.Cli.Core;
+using Datory.Cli.Utils;
 using Datory.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using Mono.Options;
@@ -33,7 +33,7 @@ namespace Datory.Cli.Tasks
         private string _directory;
         private bool _isHelp;
         private readonly OptionSet _options;
-        private ISettings _settings;
+        private readonly ISettings _settings;
 
         public RestoreJob(ISettings settings)
         {
@@ -47,7 +47,7 @@ namespace Datory.Cli.Tasks
             };
         }
 
-        public async Task RunAsync(IJobContext context)
+        private async Task RunAsync(IJobContext context)
         {
             if (!CliUtils.ParseArgs(_options, context.Args)) return;
 
@@ -103,22 +103,18 @@ namespace Datory.Cli.Tasks
             {
                 try
                 {
-                    var repository = new Repository(_settings.Database, tableName);
+                    
 
-                    if (includes != null)
-                    {
-                        if (!Utilities.ContainsIgnoreCase(includes, tableName)) continue;
-                    }
-                    if (excludes != null)
-                    {
-                        if (Utilities.ContainsIgnoreCase(excludes, tableName)) continue;
-                    }
+                    if (includes.Count > 0 && !Utilities.ContainsIgnoreCase(includes, tableName)) continue;
+                    if (excludes.Count > 0 && Utilities.ContainsIgnoreCase(excludes, tableName)) continue;
 
                     var metadataFilePath = treeInfo.GetTableMetadataFilePath(tableName);
 
                     if (!CliUtils.FileExists(metadataFilePath)) continue;
 
                     var tableInfo = Utilities.JsonDeserialize<TableInfo>(await CliUtils.ReadAllTextAsync(metadataFilePath));
+
+                    var repository = new Repository(_settings.Database, tableName, tableInfo.Columns);
 
                     await CliUtils.PrintRowAsync(tableName, tableInfo.TotalCount.ToString("#,0"));
 
@@ -187,28 +183,6 @@ namespace Datory.Cli.Tasks
             }
 
             await CliUtils.PrintRowLineAsync();
-
-            if (_settings.Database.DatabaseType == DatabaseType.Oracle)
-            {
-                var tableNameList = await _settings.Database.GetTableNamesAsync();
-                foreach (var tableName in tableNameList)
-                {
-                    try
-                    {
-                        var sqlString =
-                            $"ALTER TABLE {tableName} MODIFY Id GENERATED ALWAYS AS IDENTITY(START WITH LIMIT VALUE)";
-
-                        using (var connection = _settings.Database.GetConnection())
-                        {
-                            await connection.ExecuteAsync(sqlString);
-                        }
-                    }
-                    catch
-                    {
-                        // ignored
-                    }
-                }
-            }
 
             await Console.Out.WriteLineAsync($"恭喜，成功从文件夹：{treeInfo.DirectoryPath} 恢复数据！");
         }

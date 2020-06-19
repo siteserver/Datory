@@ -23,10 +23,6 @@ namespace Datory.Utils
             {
                 compiler = PostgreSqlImpl.Instance.GetCompiler(connectionString);
             }
-            else if (databaseType == DatabaseType.Oracle)
-            {
-                compiler = OracleImpl.Instance.GetCompiler(connectionString);
-            }
             else if (databaseType == DatabaseType.SQLite)
             {
                 compiler = SQLiteImpl.Instance.GetCompiler(connectionString);
@@ -50,10 +46,6 @@ namespace Datory.Utils
             else if (databaseType == DatabaseType.PostgreSql)
             {
                 retVal = PostgreSqlImpl.Instance.ColumnIncrement(columnName, plusNum);
-            }
-            else if (databaseType == DatabaseType.Oracle)
-            {
-                retVal = OracleImpl.Instance.ColumnIncrement(columnName, plusNum);
             }
             else if (databaseType == DatabaseType.SQLite)
             {
@@ -79,10 +71,6 @@ namespace Datory.Utils
             {
                 retVal = PostgreSqlImpl.Instance.ColumnDecrement(columnName, minusNum);
             }
-            else if (databaseType == DatabaseType.Oracle)
-            {
-                retVal = OracleImpl.Instance.ColumnDecrement(columnName, minusNum);
-            }
             else if (databaseType == DatabaseType.SQLite)
             {
                 retVal = SQLiteImpl.Instance.ColumnDecrement(columnName, minusNum);
@@ -106,10 +94,6 @@ namespace Datory.Utils
             else if (databaseType == DatabaseType.PostgreSql)
             {
                 retVal = PostgreSqlImpl.Instance.GetAutoIncrementDataType(alterTable);
-            }
-            else if (databaseType == DatabaseType.Oracle)
-            {
-                retVal = OracleImpl.Instance.GetAutoIncrementDataType(alterTable);
             }
             else if (databaseType == DatabaseType.SQLite)
             {
@@ -135,10 +119,6 @@ namespace Datory.Utils
             {
                 retVal = PostgreSqlImpl.Instance.GetColumnSqlString(tableColumn);
             }
-            else if (databaseType == DatabaseType.Oracle)
-            {
-                retVal = OracleImpl.Instance.GetColumnSqlString(tableColumn);
-            }
             else if (databaseType == DatabaseType.SQLite)
             {
                 retVal = SQLiteImpl.Instance.GetColumnSqlString(tableColumn);
@@ -162,10 +142,6 @@ namespace Datory.Utils
             else if (databaseType == DatabaseType.PostgreSql)
             {
                 retVal = PostgreSqlImpl.Instance.GetPrimaryKeySqlString(tableName, attributeName);
-            }
-            else if (databaseType == DatabaseType.Oracle)
-            {
-                retVal = OracleImpl.Instance.GetPrimaryKeySqlString(tableName, attributeName);
             }
             else if (databaseType == DatabaseType.SQLite)
             {
@@ -191,10 +167,6 @@ namespace Datory.Utils
             {
                 retVal = PostgreSqlImpl.Instance.GetQuotedIdentifier(identifier);
             }
-            else if (databaseType == DatabaseType.Oracle)
-            {
-                retVal = OracleImpl.Instance.GetQuotedIdentifier(identifier);
-            }
             else if (databaseType == DatabaseType.SQLite)
             {
                 retVal = SQLiteImpl.Instance.GetQuotedIdentifier(identifier);
@@ -218,10 +190,6 @@ namespace Datory.Utils
             else if (databaseType == DatabaseType.PostgreSql)
             {
                 retVal = PostgreSqlImpl.Instance.GetAddColumnsSqlString(tableName, columnsSqlString);
-            }
-            else if (databaseType == DatabaseType.Oracle)
-            {
-                retVal = OracleImpl.Instance.GetAddColumnsSqlString(tableName, columnsSqlString);
             }
             else if (databaseType == DatabaseType.SQLite)
             {

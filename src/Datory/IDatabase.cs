@@ -30,9 +30,11 @@ namespace Datory
 
         List<TableColumn> GetTableColumns<T>() where T : Entity;
 
-        Task DropTableAsync(string tableName);
+        List<TableColumn> GetTableColumns(IList<TableColumn> tableColumns);
 
         Task<List<TableColumn>> GetTableColumnsAsync(string tableName);
+
+        Task DropTableAsync(string tableName);
 
         Task<List<string>> GetDatabaseNamesAsync();
 

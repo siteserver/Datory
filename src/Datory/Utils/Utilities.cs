@@ -293,15 +293,8 @@ namespace Datory.Utils
             return list.Any(element => EqualsIgnoreCase(element, target));
         }
 
-        public static string GetConnectionStringDatabase(DatabaseType databaseType, string connectionString)
+        public static string GetConnectionStringDatabase(string connectionString)
         {
-            if (databaseType == DatabaseType.Oracle)
-            {
-                var index1 = connectionString.IndexOf("SERVICE_NAME=", StringComparison.Ordinal);
-                var index2 = connectionString.IndexOf(")));", StringComparison.Ordinal);
-                return connectionString.Substring(index1 + 13, index2 - index1 - 13);
-            }
-
             foreach (var pair in GetStringList(connectionString, ';'))
             {
                 if (string.IsNullOrEmpty(pair) || pair.IndexOf("=", StringComparison.Ordinal) == -1) continue;

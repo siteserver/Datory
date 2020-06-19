@@ -4,6 +4,7 @@ using Datory.Cli;
 using Datory.Cli.Abstractions;
 using Datory.Cli.Core;
 using Datory.Cli.Tasks;
+using Datory.Cli.Utils;
 using Datory.Tests.Mocks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,8 +36,7 @@ namespace Datory.Tests
             services.AddTransient<Application>();
             services.AddTransient<BackupJob>();
             services.AddTransient<RestoreJob>();
-            services.AddTransient<TestJob>();
-            services.AddTransient<VersionJob>();
+            services.AddTransient<StatusJob>();
 
             var provider = services.BuildServiceProvider();
             CliUtils.Provider = provider;

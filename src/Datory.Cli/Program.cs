@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Datory.Cli.Core;
 using Datory.Cli.Tasks;
+using Datory.Cli.Utils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -29,37 +30,33 @@ namespace Datory.Cli
                 }
             }
 
-            try
+            var contentRootPath = Directory.GetCurrentDirectory();
+            if (!File.Exists(PathUtils.Combine(contentRootPath, CliUtils.ConfigFileName)))
             {
-                var contentRootPath = Directory.GetCurrentDirectory();
-                var builder = new ConfigurationBuilder()
-                    .SetBasePath(contentRootPath)
-                    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-                IConfigurationRoot configuration = builder.Build();
-
-                var services = new ServiceCollection();
-
-                services.AddSettings(configuration, contentRootPath);
-
-                services.AddTransient<Application>();
-                services.AddTransient<BackupJob>();
-                services.AddTransient<RestoreJob>();
-                services.AddTransient<TestJob>();
-                services.AddTransient<VersionJob>();
-
-                var provider = services.BuildServiceProvider();
-                CliUtils.Provider = provider;
-
-                var application = provider.GetService<Application>();
-                await application.RunAsync(args);
+                Settings.SaveEmptySettings(PathUtils.Combine(contentRootPath, CliUtils.ConfigFileName));
             }
-            finally
-            {
-                Console.WriteLine("\r\nPress any key to exit...");
-                Console.ReadKey();
-            }
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(contentRootPath)
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .AddJsonFile(CliUtils.ConfigFileName, optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables("DATORY_")
+                .AddCommandLine(args);
+            var configuration = builder.Build();
+
+            var services = new ServiceCollection();
+
+            services.AddSettings(configuration, contentRootPath);
+
+            services.AddTransient<Application>();
+            services.AddTransient<BackupJob>();
+            services.AddTransient<RestoreJob>();
+            services.AddTransient<StatusJob>();
+
+            var provider = services.BuildServiceProvider();
+            CliUtils.Provider = provider;
+
+            var application = provider.GetService<Application>();
+            await application.RunAsync(args);
         }
-
-
     }
 }

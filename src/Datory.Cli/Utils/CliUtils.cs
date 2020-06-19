@@ -1,20 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Datory.Cli.Abstractions;
+using Datory.Cli.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Mono.Options;
-using System.IO;
-using System.Reflection;
-using Datory.Utils;
-using Datory.Cli.Abstractions;
 
-namespace Datory.Cli.Core
+namespace Datory.Cli.Utils
 {
     public static class CliUtils
     {
+        public const string ConfigFileName = "datory.json";
         public const int PageSize = 500;
-
         public static ServiceProvider Provider { get; set; }
 
         private const int ConsoleTableWidth = 77;
@@ -92,7 +91,7 @@ namespace Datory.Cli.Core
 
         public static string CreateErrorLogFile(string contentRootPath, string commandName)
         {
-            var filePath = Path.Combine(contentRootPath, $"{commandName}.error.log");
+            var filePath = PathUtils.Combine(contentRootPath, $"{commandName}.error.log");
             if (FileExists(filePath))
             {
                 File.Delete(filePath);
@@ -163,18 +162,10 @@ namespace Datory.Cli.Core
         {
             if (string.IsNullOrEmpty(settings.Database.ConnectionString))
             {
-                return (false, "请在config.json文件中设置数据库类型与连接字符串");
+                return (false, $"请在 {ConfigFileName} 文件中设置数据库类型与连接字符串");
             }
 
             return await settings.Database.IsConnectionWorksAsync();
-        }
-
-        private static string GetConfigFilePath(string contentRootPath, string configFile)
-        {
-            return FileExists(configFile)
-                ? configFile
-                : Path.Combine(contentRootPath,
-                    !string.IsNullOrEmpty(configFile) ? configFile : "Web.config");
         }
     }
 }

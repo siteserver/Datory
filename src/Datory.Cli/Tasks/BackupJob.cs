@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
+using Dapper;
 using Datory.Cli.Abstractions;
 using Datory.Cli.Core;
+using Datory.Cli.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using Mono.Options;
 using Datory.Utils;
@@ -22,7 +25,7 @@ namespace Datory.Cli.Tasks
 
         public static void PrintUsage()
         {
-            Console.WriteLine("数据库备份: datory-cli backup");
+            Console.WriteLine("数据库备份: datory backup");
             var job = new BackupJob(null);
             job._options.WriteOptionDescriptions(Console.Out);
             Console.WriteLine();
@@ -47,7 +50,7 @@ namespace Datory.Cli.Tasks
             };
         }
 
-        public async Task RunAsync(IJobContext context)
+        private async Task RunAsync(IJobContext context)
         {
             if (!CliUtils.ParseArgs(_options, context.Args)) return;
 
@@ -82,19 +85,14 @@ namespace Datory.Cli.Tasks
 
             var includes = new List<string>(_settings.Includes);
             var excludes = new List<string>(_settings.Excludes);
-            excludes.Add("bairong_Log");
-            excludes.Add("bairong_ErrorLog");
-            excludes.Add("siteserver_ErrorLog");
-            excludes.Add("siteserver_Log");
-            excludes.Add("siteserver_Tracking");
 
             var allTableNames = await _settings.Database.GetTableNamesAsync();
             var tableNames = new List<string>();
 
             foreach (var tableName in allTableNames)
             {
-                if (!Utilities.ContainsIgnoreCase(includes, tableName)) continue;
-                if (Utilities.ContainsIgnoreCase(excludes, tableName)) continue;
+                if (includes.Count > 0 && !Utilities.ContainsIgnoreCase(includes, tableName)) continue;
+                if (excludes.Count > 0 && Utilities.ContainsIgnoreCase(excludes, tableName)) continue;
                 if (Utilities.ContainsIgnoreCase(tableNames, tableName)) continue;
                 tableNames.Add(tableName);
             }
@@ -107,6 +105,7 @@ namespace Datory.Cli.Tasks
 
             foreach (var tableName in tableNames)
             {
+                treeInfo.CreateTableDirectoryPath(tableName);
                 var repository = new Repository(_settings.Database, tableName);
                 var tableInfo = new TableInfo
                 {
@@ -142,7 +141,7 @@ namespace Datory.Cli.Tasks
                                 var offset = (current - 1) * CliUtils.PageSize;
                                 var limit = tableInfo.TotalCount - offset < CliUtils.PageSize ? tableInfo.TotalCount - offset : CliUtils.PageSize;
 
-                                var rows = await repository.GetAllAsync<IEnumerable<dynamic>>(Q.Offset(offset).Limit(limit).OrderBy(identityColumnName));
+                                var rows = GetPageObjects(repository.Database, tableName, identityColumnName, offset, limit);
 
                                 await CliUtils.WriteAllTextAsync(treeInfo.GetTableContentFilePath(tableName, fileName), Utilities.JsonSerialize(rows));
                             }
@@ -152,7 +151,7 @@ namespace Datory.Cli.Tasks
                     {
                         var fileName = $"{current}.json";
                         tableInfo.RowFiles.Add(fileName);
-                        var rows = await repository.GetAllAsync<IEnumerable<dynamic>>(Q.OrderBy(identityColumnName));
+                        var rows = GetObjects(repository.Database, tableName);
 
                         await CliUtils.WriteAllTextAsync(treeInfo.GetTableContentFilePath(tableName, fileName), Utilities.JsonSerialize(rows));
                     }
@@ -163,6 +162,74 @@ namespace Datory.Cli.Tasks
 
             await CliUtils.PrintRowLineAsync();
             await Console.Out.WriteLineAsync($"恭喜，成功备份数据库至文件夹：{treeInfo.DirectoryPath}！");
+        }
+
+        private static IEnumerable<dynamic> GetObjects(IDatabase database, string tableName)
+        {
+            IEnumerable<dynamic> objects;
+            var sqlString = $"select * from {tableName}";
+
+            using (var connection = database.GetConnection())
+            {
+                connection.Open();
+
+                objects = connection.Query(sqlString, null, null, false).ToList();
+            }
+
+            return objects;
+        }
+
+        private static IEnumerable<dynamic> GetPageObjects(IDatabase database, string tableName, string identityColumnName, int offset, int limit)
+        {
+            IEnumerable<dynamic> objects;
+            var sqlString = GetPageSqlString(database, tableName, "*", string.Empty, $"ORDER BY {identityColumnName} ASC", offset, limit);
+
+            using (var connection = database.GetConnection())
+            {
+                connection.Open();
+
+                objects = connection.Query(sqlString, null, null, false).ToList();
+            }
+
+            return objects;
+        }
+
+        private static string GetPageSqlString(IDatabase database, string tableName, string columnNames, string whereSqlString, string orderSqlString, int offset, int limit)
+        {
+            var retVal = string.Empty;
+
+            if (string.IsNullOrEmpty(orderSqlString))
+            {
+                orderSqlString = "ORDER BY Id DESC";
+            }
+
+            if (offset == 0 && limit == 0)
+            {
+                return $@"SELECT {columnNames} FROM {tableName} {whereSqlString} {orderSqlString}";
+            }
+
+            if (database.DatabaseType == DatabaseType.MySql)
+            {
+                if (limit == 0)
+                {
+                    limit = int.MaxValue;
+                }
+                retVal = $@"SELECT {columnNames} FROM {tableName} {whereSqlString} {orderSqlString} LIMIT {limit} OFFSET {offset}";
+            }
+            else if (database.DatabaseType == DatabaseType.SqlServer)
+            {
+                retVal = limit == 0
+                    ? $"SELECT {columnNames} FROM {tableName} {whereSqlString} {orderSqlString} OFFSET {offset} ROWS"
+                    : $"SELECT {columnNames} FROM {tableName} {whereSqlString} {orderSqlString} OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY";
+            }
+            else if (database.DatabaseType == DatabaseType.PostgreSql)
+            {
+                retVal = limit == 0
+                    ? $@"SELECT {columnNames} FROM {tableName} {whereSqlString} {orderSqlString} OFFSET {offset}"
+                    : $@"SELECT {columnNames} FROM {tableName} {whereSqlString} {orderSqlString} LIMIT {limit} OFFSET {offset}";
+            }
+
+            return retVal;
         }
     }
 }

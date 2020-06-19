@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
-using CacheManager.Core;
 using Dapper;
 using Newtonsoft.Json.Linq;
 using SqlKata;
@@ -94,7 +93,7 @@ SET IDENTITY_INSERT {tableName} OFF
             var objList = new List<IDictionary<string, object>>();
             foreach (var item in items)
             {
-                objList.Add(JsonGetDictionaryIgnorecase(item));
+                objList.Add(JsonGetDictionaryIgnoreCase(item));
             }
             await BulkInsertAsync(database, tableName, tableColumns, objList);
         }
@@ -143,8 +142,8 @@ SET IDENTITY_INSERT {tableName} OFF
                     }
                     else if (tableColumn.DataType == DataType.DateTime)
                     {
-                        if (val == null) val = DateTimeOffset.UtcNow;
-                        values.Append($"{GetDateTimeSqlString(database, Convert.ToDateTime(val))},");
+                        if (val == null) val = DateTime.Now;
+                        values.Append($"{GetDateTimeSqlString(Convert.ToDateTime(val))},");
                     }
                     else
                     {
@@ -176,16 +175,14 @@ SET IDENTITY_INSERT {tableName} OFF
             }
         }
 
-        private static Dictionary<string, object> JsonGetDictionaryIgnorecase(JObject json)
+        private static Dictionary<string, object> JsonGetDictionaryIgnoreCase(JObject json)
         {
             return new Dictionary<string, object>(json.ToObject<IDictionary<string, object>>(), StringComparer.CurrentCultureIgnoreCase);
         }
 
-        private static string GetDateTimeSqlString(IDatabase database, DateTime dateTime)
+        private static string GetDateTimeSqlString(DateTime dateTime)
         {
-            return database.DatabaseType == DatabaseType.Oracle
-                ? $"to_date('{dateTime:yyyy-MM-dd HH:mm:ss}', 'yyyy-mm-dd hh24:mi:ss')"
-                : $"'{dateTime:yyyy-MM-dd HH:mm:ss}'";
+            return $"'{dateTime:yyyy-MM-dd HH:mm:ss}'";
         }
 
         private static async Task InsertRowsAsync(IDatabase database, string tableName, string columnNames, List<string> valuesList, DynamicParameters parameterList)
@@ -213,19 +210,6 @@ SET IDENTITY_INSERT {tableName} OFF
 
                 using var connection = database.GetConnection();
                 await connection.ExecuteAsync(sqlString, parameterList);
-            }
-            else if (database.DatabaseType == DatabaseType.Oracle)
-            {
-                var sqlStringBuilder = new StringBuilder("INSERT ALL");
-                foreach (var values in valuesList)
-                {
-                    sqlStringBuilder.Append($@" INTO {tableName} ({columnNames}) VALUES ({values})");
-                }
-
-                sqlStringBuilder.Append(" SELECT 1 FROM DUAL");
-
-                using var connection = database.GetConnection();
-                await connection.ExecuteAsync(sqlStringBuilder.ToString(), parameterList);
             }
             else
             {

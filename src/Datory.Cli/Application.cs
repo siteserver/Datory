@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Datory.Cli.Abstractions;
 using Datory.Cli.Core;
 using Datory.Cli.Tasks;
+using Datory.Cli.Utils;
 using Mono.Options;
 using Quartz;
 using Quartz.Impl;
@@ -61,14 +62,14 @@ namespace Datory.Cli
             CommandName = string.Join(" ", commandNames);
             CommandArgs = commandArgs.ToArray();
 
-            Console.WriteLine("欢迎使用 SiteServer Cli 命令行工具");
+            Console.WriteLine("Welcome to datory command-line tools");
             Console.WriteLine();
 
             Jobs = new Dictionary<string, Func<IJobContext, Task>>(StringComparer.CurrentCultureIgnoreCase)
             {
                 {BackupJob.CommandName, BackupJob.ExecuteAsync},
                 {RestoreJob.CommandName, RestoreJob.ExecuteAsync},
-                {TestJob.CommandName, TestJob.ExecuteAsync}
+                {StatusJob.CommandName, StatusJob.ExecuteAsync}
             };
 
             // PluginManager.LoadPlugins(CliUtils.PhysicalApplicationPath);
