@@ -17,12 +17,12 @@ namespace Datory
             return Set(column, value.GetValue());
         }
 
-        public static Query Set(string column, IEnumerable<int> list)
+        public static Query Set(string column, List<int> list)
         {
             return Set(column, Utilities.ToString(list));
         }
 
-        public static Query Set(string column, IEnumerable<string> list)
+        public static Query Set(string column, List<string> list)
         {
             return Set(column, Utilities.ToString(list));
         }
@@ -37,12 +37,12 @@ namespace Datory
             return Set(query, column, value.GetValue());
         }
 
-        public static Query Set(this Query query, string column, IEnumerable<int> list)
+        public static Query Set(this Query query, string column, List<int> list)
         {
             return Set(query, column, Utilities.ToString(list));
         }
 
-        public static Query Set(this Query query, string column, IEnumerable<string> list)
+        public static Query Set(this Query query, string column, List<string> list)
         {
             return Set(query, column, Utilities.ToString(list));
         }

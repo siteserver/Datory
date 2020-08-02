@@ -71,6 +71,9 @@ namespace Datory.Utils
                 {
                     try
                     {
+                        //var enumType = (Enum)value;
+                        //var enumValue = enumType.GetValue();
+                        //propertyInfo.SetValue(obj, enumValue, null);
                         propertyInfo.SetValue(obj, Enum.Parse(propertyType, value.ToString(), true), null);
                     }
                     catch

@@ -47,19 +47,19 @@ namespace Datory.Utils
             }
         }
 
-        public static string ToString(IEnumerable<string> objects, string separator = ",")
+        public static string ToString(List<string> objects, string separator = ",")
         {
-            return objects != null ? string.Join(separator, objects) : string.Empty;
+            return objects != null && objects.Count > 0 ? string.Join(separator, objects) : string.Empty;
         }
 
-        public static string ToString(IEnumerable<int> objects, string separator = ",")
+        public static string ToString(List<int> objects, string separator = ",")
         {
-            return objects != null ? string.Join(separator, objects) : string.Empty;
+            return objects != null && objects.Count > 0 ? string.Join(separator, objects) : string.Empty;
         }
 
-        public static string ToString(IEnumerable<object> objects, string separator = ",")
+        public static string ToString(List<object> objects, string separator = ",")
         {
-            return objects != null ? string.Join(separator, objects) : string.Empty;
+            return objects != null && objects.Count > 0 ? string.Join(separator, objects) : string.Empty;
         }
 
         public static List<string> GetStringList(string collection, char split = ',')
