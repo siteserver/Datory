@@ -37,7 +37,7 @@
     provider: NuGet
     server: # remove to push to NuGet.org
     api_key:
-      secure: 9It7tTZD6eJFdc3/dsjeZ0SXgevLQW57PKbR18aMlOisCBdKQOWWOqBYn1UEgWej
+      secure: oy2cmcyl4kg34xni7q5a7njjmmlljkyuvebkb3q4v3esxq
     skip_symbols: false
     symbol_server: # remove to push symbols to SymbolSource.org
     artifact: /Datory.*\.nupkg/
@@ -81,7 +81,7 @@
     provider: NuGet
     server: # remove to push to NuGet.org
     api_key:
-      secure: 9It7tTZD6eJFdc3/dsjeZ0SXgevLQW57PKbR18aMlOisCBdKQOWWOqBYn1UEgWej
+      secure: oy2cmcyl4kg34xni7q5a7njjmmlljkyuvebkb3q4v3esxq
     skip_symbols: false
     symbol_server: # remove to push symbols to SymbolSource.org
     artifact: /Datory.*\.nupkg/
