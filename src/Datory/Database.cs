@@ -103,10 +103,12 @@ namespace Datory
         public async Task<bool> IsTableExistsAsync(string tableName)
         {
             bool exists;
+            var databaseName = DatabaseName;
 
             if (DatabaseType == DatabaseType.MySql || DatabaseType == DatabaseType.PostgreSql)
             {
                 tableName = tableName.ToLower();
+                databaseName = databaseName.ToLower();
             }
 
             try
@@ -120,7 +122,7 @@ namespace Datory
                 }
                 else // ANSI SQL way.  Works in PostgreSQL, MSSQL, MySQL.  
                 {
-                    var sql = $"select case when exists((select * from information_schema.tables where table_name = '{tableName}')) then 1 else 0 end";
+                    var sql = $"select case when exists((select * from information_schema.tables where table_schema = '{databaseName}' and table_name = '{tableName}')) then 1 else 0 end";
 
                     using var connection = GetConnection();
                     exists = await connection.ExecuteScalarAsync<int>(sql) == 1;
