@@ -7,6 +7,7 @@ using Dapper;
 using Npgsql;
 using SqlKata.Compilers;
 using Datory.Utils;
+using MySql.Data.Common;
 
 [assembly: InternalsVisibleTo("Datory.Tests")]
 
@@ -76,12 +77,12 @@ namespace Datory.DatabaseImpl
 
         public string ColumnIncrement(string columnName, int plusNum = 1)
         {
-            return $"COALESCE({columnName}, 0) + {plusNum}";
+            return $"COALESCE({GetQuotedIdentifier(columnName)}, 0) + {plusNum}";
         }
 
         public string ColumnDecrement(string columnName, int minusNum = 1)
         {
-            return $"COALESCE({columnName}, 0) - {minusNum}";
+            return $"COALESCE({GetQuotedIdentifier(columnName)}, 0) - {minusNum}";
         }
 
         public string GetAutoIncrementDataType(bool alterTable = false)
@@ -91,6 +92,7 @@ namespace Datory.DatabaseImpl
 
         private string ToColumnString(DataType type, string attributeName, int length)
         {
+            attributeName = GetQuotedIdentifier(attributeName);
             if (type == DataType.Boolean)
             {
                 return $"{attributeName} bool";
@@ -118,7 +120,7 @@ namespace Datory.DatabaseImpl
         {
             if (tableColumn.IsIdentity)
             {
-                return $@"{tableColumn.AttributeName} {GetAutoIncrementDataType()}";
+                return $@"{GetQuotedIdentifier(tableColumn.AttributeName)} {GetAutoIncrementDataType()}";
             }
 
             return ToColumnString(tableColumn.DataType, tableColumn.AttributeName, tableColumn.DataLength);
@@ -126,12 +128,13 @@ namespace Datory.DatabaseImpl
 
         public string GetPrimaryKeySqlString(string tableName, string attributeName)
         {
-            return $@"CONSTRAINT PK_{tableName}_{attributeName} PRIMARY KEY ({attributeName})";
+            var pkName = GetQuotedIdentifier($"PK_{tableName}_{attributeName}");
+            return $@"CONSTRAINT {pkName} PRIMARY KEY ({GetQuotedIdentifier(attributeName)})";
         }
 
         public string GetQuotedIdentifier(string identifier)
         {
-            return identifier;
+            return $@"""{identifier}""";
         }
 
         private DataType ToDataType(string dataTypeStr)
@@ -173,7 +176,7 @@ namespace Datory.DatabaseImpl
             using (var connection = GetConnection(connectionString))
             {
                 var sqlString =
-                   $"SELECT COLUMN_NAME AS ColumnName, UDT_NAME AS UdtName, CHARACTER_MAXIMUM_LENGTH AS CharacterMaximumLength, COLUMN_DEFAULT AS ColumnDefault FROM information_schema.columns WHERE table_catalog = '{connection.Database}' AND table_name = '{tableName.ToLower()}' ORDER BY ordinal_position";
+                   $@"SELECT COLUMN_NAME AS ""ColumnName"", UDT_NAME AS ""UdtName"", CHARACTER_MAXIMUM_LENGTH AS ""CharacterMaximumLength"", COLUMN_DEFAULT AS ""ColumnDefault"" FROM information_schema.columns WHERE table_catalog = '{connection.Database}' AND table_name = '{tableName}' ORDER BY ordinal_position";
 
                 var columns = await connection.QueryAsync<dynamic>(sqlString);
                 foreach (var column in columns)
@@ -186,21 +189,24 @@ namespace Datory.DatabaseImpl
                     var dataType = ToDataType(udtName);
                     var length = characterMaximumLength;
 
-                    var isIdentity = columnDefault.StartsWith("nextval(");
+                    var isIdentity = columnDefault != null && columnDefault.StartsWith("nextval(");
 
                     var info = new TableColumn
                     {
                         AttributeName = columnName,
                         DataType = dataType,
-                        DataLength = length,
                         IsPrimaryKey = false,
                         IsIdentity = isIdentity
                     };
+                    if (length != null)
+                    {
+                        info.DataLength = length;
+                    }
                     list.Add(info);
                 }
 
                 sqlString =
-                    $"select column_name AS ColumnName, constraint_name AS ConstraintName from information_schema.key_column_usage where table_catalog = '{connection.Database}' and table_name = '{tableName.ToLower()}';";
+                    $@"select column_name AS ""ColumnName"", constraint_name AS ""ConstraintName"" from information_schema.key_column_usage where table_catalog = '{connection.Database}' and table_name = '{tableName}';";
 
                 var rows = connection.Query<dynamic>(sqlString);
                 foreach (var row in rows)

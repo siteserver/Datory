@@ -41,5 +41,7 @@ namespace Datory
         Task<List<string>> GetTableNamesAsync();
 
         Task<(bool IsConnectionWorks, string ErrorMessage)> IsConnectionWorksAsync();
+
+        string GetQuotedIdentifier(string identifier);
     }
 }

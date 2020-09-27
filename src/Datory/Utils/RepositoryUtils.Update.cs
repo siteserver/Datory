@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using CacheManager.Core;
 using Dapper;
+using Newtonsoft.Json.Converters;
 using SqlKata;
 
 [assembly: InternalsVisibleTo("Datory.Data.Tests")]
@@ -46,7 +47,7 @@ namespace Datory.Utils
 
             xQuery
                 .ClearComponent("update")
-                .SetRaw($"{columnName} = {DbUtils.ColumnIncrement(database.DatabaseType, columnName, num)}");
+                .SetRaw($"{database.GetQuotedIdentifier(columnName)} = {DbUtils.ColumnIncrement(database.DatabaseType, columnName, num)}");
 
             return await UpdateAllAsync(database, tableName, redis, xQuery);
         }
@@ -57,7 +58,7 @@ namespace Datory.Utils
 
             xQuery
                 .ClearComponent("update")
-                .SetRaw($"{columnName} = {DbUtils.ColumnDecrement(database.DatabaseType, columnName, num)}");
+                .SetRaw($"{database.GetQuotedIdentifier(columnName)} = {DbUtils.ColumnDecrement(database.DatabaseType, columnName, num)}");
 
             return await UpdateAllAsync(database, tableName, redis, xQuery);
         }

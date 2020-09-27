@@ -100,16 +100,15 @@ namespace Datory
             return (retVal, errorMessage);
         }
 
+        public string GetQuotedIdentifier(string identifier)
+        {
+            return DbUtils.GetQuotedIdentifier(DatabaseType, identifier);
+        }
+
         public async Task<bool> IsTableExistsAsync(string tableName)
         {
             bool exists;
             var databaseName = DatabaseName;
-
-            if (DatabaseType == DatabaseType.MySql || DatabaseType == DatabaseType.PostgreSql)
-            {
-                tableName = tableName.ToLower();
-                databaseName = databaseName.ToLower();
-            }
 
             try
             {
@@ -120,9 +119,16 @@ namespace Datory
                     using var connection = GetConnection();
                     exists = await connection.ExecuteScalarAsync<int>(sql) == 1;
                 }
-                else // ANSI SQL way.  Works in PostgreSQL, MSSQL, MySQL.  
+                else if (DatabaseType == DatabaseType.PostgreSql || DatabaseType == DatabaseType.SqlServer)
                 {
-                    var sql = $"select case when exists((select * from information_schema.tables where table_schema = '{databaseName}' and table_name = '{tableName}')) then 1 else 0 end";
+                    var sql = $"SELECT COUNT(*) FROM information_schema.tables WHERE table_catalog = '{databaseName}' AND table_name = '{tableName}'";
+
+                    using var connection = GetConnection();
+                    exists = await connection.ExecuteScalarAsync<int>(sql) == 1;
+                }
+                else
+                {
+                    var sql = $"SELECT COUNT(*) FROM information_schema.tables WHERE (table_schema = '{databaseName}') AND table_name  = '{tableName}'";
 
                     using var connection = GetConnection();
                     exists = await connection.ExecuteScalarAsync<int>(sql) == 1;
@@ -229,7 +235,7 @@ namespace Datory
         {
             var sqlBuilder = new StringBuilder();
 
-            sqlBuilder.Append($@"CREATE TABLE {DbUtils.GetQuotedIdentifier(DatabaseType, tableName)} (").AppendLine();
+            sqlBuilder.Append($@"CREATE TABLE {GetQuotedIdentifier(tableName)} (").AppendLine();
 
             var primaryKeyColumns = new List<TableColumn>();
             TableColumn identityColumn = null;
@@ -328,8 +334,8 @@ namespace Datory
         {
             if (columns == null || columns.Length == 0) return;
 
-            var fullTableName = DbUtils.GetQuotedIdentifier(DatabaseType, tableName);
-            var fullIndexName = DbUtils.GetQuotedIdentifier(DatabaseType, indexName);
+            var fullTableName = GetQuotedIdentifier(tableName);
+            var fullIndexName = GetQuotedIdentifier(indexName);
             var sqlString = new StringBuilder($@"CREATE INDEX {fullIndexName} ON {fullTableName}(");
 
             foreach (var column in columns)
@@ -342,7 +348,7 @@ namespace Datory
                     columnName = column.Substring(0, i);
                     columnOrder = column.Substring(i + 1);
                 }
-                sqlString.Append($"{DbUtils.GetQuotedIdentifier(DatabaseType, columnName)} {columnOrder}, ");
+                sqlString.Append($"{GetQuotedIdentifier(columnName)} {columnOrder}, ");
             }
 
             sqlString.Length -= 2;
@@ -441,7 +447,7 @@ namespace Datory
         public async Task DropTableAsync(string tableName)
         {
             using var connection = GetConnection();
-            await connection.ExecuteAsync($"DROP TABLE {DbUtils.GetQuotedIdentifier(DatabaseType, tableName)}");
+            await connection.ExecuteAsync($"DROP TABLE {GetQuotedIdentifier(tableName)}");
         }
 
         public async Task<List<string>> GetDatabaseNamesAsync()

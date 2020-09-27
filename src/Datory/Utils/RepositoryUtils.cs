@@ -75,7 +75,7 @@ namespace Datory.Utils
                     Query = query
                 };
                 var where = compiler.CompileWheres(result);
-                sql = $"UPDATE {tableName} SET { string.Join(", ", setList)} {where}";
+                sql = $"UPDATE {database.GetQuotedIdentifier(tableName)} SET { string.Join(", ", setList)} {where}";
 
                 //sql = Helper.ExpandParameters(sql, "?", bindings.ToArray());
                 sql = Helper.ReplaceAll(sql, "?", i => "@p" + i);
