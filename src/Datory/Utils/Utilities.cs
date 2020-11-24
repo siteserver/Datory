@@ -286,9 +286,9 @@ namespace Datory.Utils
             return string.IsNullOrEmpty(text) ? string.Empty : text.ToLower().Trim();
         }
 
-        public static bool ContainsIgnoreCase(IList<string> list, string target)
+        public static bool ContainsIgnoreCase(IEnumerable<string> list, string target)
         {
-            if (list == null || list.Count == 0) return false;
+            if (list == null) return false;
 
             return list.Any(element => EqualsIgnoreCase(element, target));
         }

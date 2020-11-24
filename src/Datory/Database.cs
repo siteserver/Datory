@@ -152,7 +152,7 @@ namespace Datory
             return exists;
         }
 
-        public async Task<string> AddIdentityColumnIdIfNotExistsAsync(string tableName, IList<TableColumn> columns)
+        public async Task<string> AddIdentityColumnIdIfNotExistsAsync(string tableName, List<TableColumn> columns)
         {
             var identityColumnName = string.Empty;
             if (columns != null)
@@ -194,7 +194,7 @@ namespace Datory
             return identityColumnName;
         }
 
-        public async Task AlterTableAsync(string tableName, IList<TableColumn> tableColumns, IList<string> dropColumnNames = null)
+        public async Task AlterTableAsync(string tableName, IEnumerable<TableColumn> tableColumns, IEnumerable<string> dropColumnNames = null)
         {
             var list = new List<string>();
 
@@ -231,7 +231,7 @@ namespace Datory
             }
         }
 
-        public async Task CreateTableAsync(string tableName, IList<TableColumn> tableColumns)
+        public async Task CreateTableAsync(string tableName, IEnumerable<TableColumn> tableColumns)
         {
             var sqlBuilder = new StringBuilder();
 
@@ -374,7 +374,7 @@ namespace Datory
             return ReflectionUtils.GetTableColumns(typeof(T));
         }
 
-        public List<TableColumn> GetTableColumns(IList<TableColumn> tableColumns)
+        public List<TableColumn> GetTableColumns(IEnumerable<TableColumn> tableColumns)
         {
             var columns = new List<TableColumn>
             {

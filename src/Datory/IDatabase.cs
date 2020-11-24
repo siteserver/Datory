@@ -16,11 +16,11 @@ namespace Datory
 
         Task<bool> IsTableExistsAsync(string tableName);
 
-        Task<string> AddIdentityColumnIdIfNotExistsAsync(string tableName, IList<TableColumn> columns);
+        Task<string> AddIdentityColumnIdIfNotExistsAsync(string tableName, List<TableColumn> columns);
 
-        Task AlterTableAsync(string tableName, IList<TableColumn> tableColumns, IList<string> dropColumnNames = null);
+        Task AlterTableAsync(string tableName, IEnumerable<TableColumn> tableColumns, IEnumerable<string> dropColumnNames = null);
 
-        Task CreateTableAsync(string tableName, IList<TableColumn> tableColumns);
+        Task CreateTableAsync(string tableName, IEnumerable<TableColumn> tableColumns);
 
         Task CreateIndexAsync(string tableName, string indexName, params string[] columns);
 
@@ -30,7 +30,7 @@ namespace Datory
 
         List<TableColumn> GetTableColumns<T>() where T : Entity;
 
-        List<TableColumn> GetTableColumns(IList<TableColumn> tableColumns);
+        List<TableColumn> GetTableColumns(IEnumerable<TableColumn> tableColumns);
 
         Task<List<TableColumn>> GetTableColumnsAsync(string tableName);
 

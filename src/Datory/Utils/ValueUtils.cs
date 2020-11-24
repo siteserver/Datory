@@ -150,8 +150,8 @@ namespace Datory.Utils
             if (propertyType == typeof(string) ||
                 propertyType == typeof(char) ||
                 propertyType == typeof(Enum) ||
-                propertyType == typeof(IList<int>) ||
-                propertyType == typeof(IList<string>))
+                propertyType == typeof(List<int>) ||
+                propertyType == typeof(List<string>))
             {
                 if (attribute.Text)
                 {
@@ -161,10 +161,6 @@ namespace Datory.Utils
                 {
                     dataType = DataType.VarChar;
                     dataLength = attribute.Length;
-                    if (dataLength <= 0)
-                    {
-                        dataLength = DbUtils.VarCharDefaultLength;
-                    }
                 }
             }
             else if (propertyType == typeof(int))
@@ -185,6 +181,11 @@ namespace Datory.Utils
             }
 
             var isPrimaryKey = Utilities.EqualsIgnoreCase(propertyInfo.Name, nameof(Entity.Id));
+
+            if (dataType == DataType.VarChar && dataLength <= 0)
+            {
+                dataLength = DbUtils.VarCharDefaultLength;
+            }
 
             return new TableColumn
             {
