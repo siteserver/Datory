@@ -41,9 +41,6 @@ namespace Datory.Caching
                     return CacheFactory.Build(settings =>
                     {
                         settings
-                            .WithMicrosoftMemoryCacheHandle()
-                            .WithExpiration(ExpirationMode.None, TimeSpan.Zero)
-                            .And
                             .WithRedisConfiguration("redis", config =>
                             {
                                 if (!string.IsNullOrEmpty(redis.Password))
