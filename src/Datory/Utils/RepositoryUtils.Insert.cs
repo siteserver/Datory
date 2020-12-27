@@ -103,7 +103,7 @@ SET IDENTITY_INSERT {database.GetQuotedIdentifier(tableName)} OFF
             var columnNames = new StringBuilder();
             foreach (var tableColumn in tableColumns)
             {
-                columnNames.Append($"{tableColumn.AttributeName},");
+                columnNames.Append($"{database.GetQuotedIdentifier(tableColumn.AttributeName)},");
             }
             if (columnNames.Length > 0) columnNames.Length -= 1;
 
