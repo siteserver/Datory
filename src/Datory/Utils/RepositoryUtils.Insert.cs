@@ -198,15 +198,15 @@ SET IDENTITY_INSERT {database.GetQuotedIdentifier(tableName)} OFF
 
                 var sqlString = sqlStringBuilder.ToString();
 
-                var isIdentityColumn = !Utilities.EqualsIgnoreCase(tableName, "siteserver_Site");
-                if (isIdentityColumn)
-                {
+                //var isIdentityColumn = !Utilities.EqualsIgnoreCase(tableName, "siteserver_Site");
+                //if (isIdentityColumn)
+                //{
                     sqlString = $@"
 SET IDENTITY_INSERT {tableName} ON
 {sqlString}
 SET IDENTITY_INSERT {tableName} OFF
 ";
-                }
+                //}
 
                 using var connection = database.GetConnection();
                 await connection.ExecuteAsync(sqlString, parameterList);
